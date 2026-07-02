@@ -1,7 +1,9 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_DEV_JWT_SECRET = "change-this-dev-secret-before-production"
 
 
 class Settings(BaseSettings):
@@ -10,6 +12,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     database_url: str = "sqlite:///./bom_tracker.db"
     backend_cors_origins: str = Field(default="http://localhost:5173")
+    jwt_secret_key: str = DEFAULT_DEV_JWT_SECRET
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
@@ -20,6 +25,19 @@ class Settings(BaseSettings):
             for origin in self.backend_cors_origins.split(",")
             if origin.strip()
         ]
+
+    @property
+    def secure_cookies(self) -> bool:
+        return self.environment.lower() in {"production", "staging"}
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> "Settings":
+        if (
+            self.environment.lower() == "production"
+            and self.jwt_secret_key == DEFAULT_DEV_JWT_SECRET
+        ):
+            raise ValueError("JWT_SECRET_KEY must be changed in production.")
+        return self
 
 
 @lru_cache

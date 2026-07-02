@@ -1,4 +1,6 @@
-import { Bell, Menu, Moon, Settings, Sun } from "lucide-react";
+import { Bell, LogOut, Menu, Moon, Settings, Sun } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
 
 type NavbarProps = {
@@ -12,6 +14,22 @@ export function Navbar({
   onToggleDarkMode,
   onOpenSidebar,
 }: NavbarProps) {
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login", { replace: true });
+  }
+
+  const initials =
+    user?.full_name
+      ?.split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() ?? user?.email.slice(0, 2).toUpperCase() ?? "U";
+
   return (
     <header className="sticky top-0 z-20 border-b bg-card/95 backdrop-blur">
       <div className="flex h-16 items-center justify-between gap-4 px-4 lg:px-6">
@@ -55,8 +73,11 @@ export function Navbar({
             className="flex h-9 w-9 items-center justify-center rounded-full border bg-secondary text-sm font-semibold text-secondary-foreground"
             aria-label="User menu"
           >
-            TB
+            {initials}
           </button>
+          <Button type="button" variant="ghost" size="icon" onClick={handleLogout} aria-label="Log out">
+            <LogOut className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     </header>

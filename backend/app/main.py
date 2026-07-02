@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.auth import router as auth_router
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.middleware.auth import JWTAuthenticationMiddleware
 
 
 def create_app() -> FastAPI:
@@ -12,6 +14,7 @@ def create_app() -> FastAPI:
         description="Backend API scaffold for the BOM Tracker application.",
     )
 
+    app.add_middleware(JWTAuthenticationMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -20,6 +23,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    app.include_router(auth_router)
     app.include_router(api_router, prefix="/api/v1")
     return app
 

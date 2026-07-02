@@ -112,6 +112,34 @@ Default URLs:
 - Backend docs: `http://localhost:8000/docs`
 - Backend health: `http://localhost:8000/api/v1/health`
 
+## Authentication
+
+Phase 3 adds JWT-backed authentication endpoints:
+
+```text
+POST /register
+POST /login
+POST /logout
+GET  /me
+```
+
+Run migrations before using authentication:
+
+```bash
+cd backend
+source .venv/bin/activate
+alembic upgrade head
+```
+
+Security defaults:
+
+- Passwords are hashed with bcrypt through Passlib.
+- JWTs are stored in an HttpOnly cookie named `access_token`.
+- Cookies use `SameSite=Lax`; `Secure` is enabled automatically outside local development.
+- JavaScript does not read or store JWTs.
+- `JWT_SECRET_KEY` must be changed for production.
+- `/me` is protected by JWT middleware plus a current-user dependency.
+
 ## Root Scripts
 
 From the repository root:
