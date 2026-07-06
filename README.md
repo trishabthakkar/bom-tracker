@@ -133,7 +133,7 @@ alembic upgrade head
 
 Security defaults:
 
-- Passwords are hashed with bcrypt through Passlib.
+- Passwords are hashed with bcrypt.
 - JWTs are stored in an HttpOnly cookie named `access_token`.
 - Cookies use `SameSite=Lax`; `Secure` is enabled automatically outside local development.
 - JavaScript does not read or store JWTs.
@@ -202,6 +202,22 @@ cd backend
 source .venv/bin/activate
 pytest app/tests
 ```
+
+## Dependency Graph
+
+Phase 7 adds NetworkX-based dependency graph analysis for parsed BOM files.
+
+Endpoints:
+
+```text
+POST /api/v1/graph/build/{upload_id}
+GET  /api/v1/graph/{upload_id}/parents/{part_number}
+GET  /api/v1/graph/{upload_id}/children/{part_number}
+GET  /api/v1/graph/{upload_id}/paths?source={source}&target={target}
+GET  /api/v1/graph/{upload_id}/stats
+```
+
+The graph is directed from parent assembly to child assembly, then from child assembly to part number when both values exist. If no child assembly is provided, it falls back to parent assembly to part number.
 
 ## Root Scripts
 

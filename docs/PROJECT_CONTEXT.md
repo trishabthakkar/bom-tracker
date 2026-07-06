@@ -74,6 +74,15 @@ The frontend and backend run independently. The frontend calls protected backend
 - Added protected parse endpoint for already-uploaded BOM files.
 - Added parser unit tests for CSV, XLSX, aliases, missing required columns, and unsupported extensions.
 
+### Phase 7 - Dependency Graph
+
+- Added NetworkX dependency graph service.
+- Converts parsed BOM rows into a directed graph.
+- Keeps graph construction separate from parsing.
+- Adds directed edges from parent assembly to child assembly, or from parent assembly to part number when no child assembly is present.
+- Added protected graph endpoints for graph build, affected parents, affected children, dependency paths, and graph statistics.
+- Added graph unit tests for construction, traversal, paths, and statistics.
+
 ## Backend Endpoints
 
 Public:
@@ -89,6 +98,11 @@ Protected:
 - `POST /api/v1/uploads`
 - `GET /api/v1/uploads`
 - `POST /api/v1/bom/parse/{upload_id}`
+- `POST /api/v1/graph/build/{upload_id}`
+- `GET /api/v1/graph/{upload_id}/parents/{part_number}`
+- `GET /api/v1/graph/{upload_id}/children/{part_number}`
+- `GET /api/v1/graph/{upload_id}/paths?source={source}&target={target}`
+- `GET /api/v1/graph/{upload_id}/stats`
 
 Authentication is also available under `/api/v1` through the API router for compatibility.
 
@@ -157,6 +171,36 @@ Current parser behavior:
 - Returns structured rows through the API.
 - Does not persist normalized BOM rows yet.
 
+## Dependency Graph
+
+Graph library:
+
+- NetworkX
+
+Graph direction:
+
+- `parent_assembly -> child_assembly`
+- `child_assembly -> part_number` when both values exist and differ
+- fallback: `parent_assembly -> part_number`
+
+Graph endpoint behavior:
+
+- Rebuilds graph on demand from uploaded CSV/XLSX files.
+- Requires the upload to belong to the authenticated user.
+- Returns parents with NetworkX ancestors.
+- Returns children with NetworkX descendants.
+- Returns simple dependency paths between source and target nodes.
+- Returns graph statistics:
+  - node count
+  - edge count
+  - root count
+  - leaf count
+  - cycle presence
+
+Current limitation:
+
+- Graphs are not persisted or cached yet.
+
 ## Security Decisions
 
 - Passwords are hashed with bcrypt.
@@ -175,7 +219,6 @@ Current parser behavior:
 
 - PDF text extraction.
 - ECO interpretation.
-- Dependency graph construction.
 - AI/LLM services.
 - Impact report generation from real data.
 - Server-side token revocation.
@@ -184,7 +227,8 @@ Current parser behavior:
 
 ## Next Logical Phase
 
-Phase 7 should persist normalized BOM data and build the dependency graph foundation:
+Phase 8 should persist normalized BOM data and graph snapshots:
 
 - Store normalized parts and assembly relationships.
 - Prepare dependency graph tables for later analysis.
+- Use persisted data to power the frontend Dependency Graph page.
