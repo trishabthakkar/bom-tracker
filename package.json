@@ -9,6 +9,7 @@
     "frontend:lint": "npm --prefix frontend run lint",
     "build": "npm --prefix frontend run build",
     "lint": "npm --prefix frontend run lint",
-    "backend:dev": "uvicorn app.main:app --reload --app-dir backend"
+    "backend:dev": "uvicorn app.main:app --reload --app-dir backend",
+    "backend:test": "backend/.venv/bin/pytest"
   }
 }

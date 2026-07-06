@@ -6,7 +6,11 @@ export function PublicRoute() {
 
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">
+      <div
+        className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground"
+        role="status"
+        aria-live="polite"
+      >
         Loading...
       </div>
     );

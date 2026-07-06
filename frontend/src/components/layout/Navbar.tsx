@@ -1,5 +1,5 @@
 import { Bell, LogOut, Menu, Moon, Settings, Sun } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
 
@@ -65,17 +65,26 @@ export function Navbar({
           >
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
-          <Button type="button" variant="ghost" size="icon" aria-label="Settings">
-            <Settings className="h-5 w-5" />
+          <Button asChild type="button" variant="ghost" size="icon" aria-label="Open settings">
+            <NavLink to="/settings">
+              <Settings className="h-5 w-5" />
+            </NavLink>
           </Button>
           <button
             type="button"
             className="flex h-9 w-9 items-center justify-center rounded-full border bg-secondary text-sm font-semibold text-secondary-foreground"
-            aria-label="User menu"
+            aria-label={user?.email ? `Signed in as ${user.email}` : "User menu"}
+            title={user?.email ?? "User"}
           >
             {initials}
           </button>
-          <Button type="button" variant="ghost" size="icon" onClick={handleLogout} aria-label="Log out">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            aria-label="Log out"
+          >
             <LogOut className="h-5 w-5" />
           </Button>
         </div>

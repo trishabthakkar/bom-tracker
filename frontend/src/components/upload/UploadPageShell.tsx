@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { FileDropzone } from "@/components/upload/FileDropzone";
 import { UploadHistory } from "@/components/upload/UploadHistory";
@@ -140,27 +141,34 @@ export function UploadPageShell({
             {uploading ? <UploadProgress progress={progress} /> : null}
 
             {message ? (
-              <div className="flex gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+              <div
+                className="flex gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
+                role="status"
+                aria-live="polite"
+              >
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{message}</span>
               </div>
             ) : null}
 
             {error ? (
-              <div className="flex gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <div
+                className="flex gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+                role="alert"
+              >
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
             ) : null}
 
-            <button
+            <Button
               type="button"
-              className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+              className="w-full"
               disabled={!selectedFile || uploading}
               onClick={handleUpload}
             >
               {uploading ? "Uploading..." : "Upload securely"}
-            </button>
+            </Button>
           </div>
         </DashboardCard>
 

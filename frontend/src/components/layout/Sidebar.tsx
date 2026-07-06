@@ -19,7 +19,9 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <>
-      <div
+      <button
+        type="button"
+        aria-label="Close sidebar"
         className={cn(
           "fixed inset-0 z-30 bg-foreground/30 backdrop-blur-sm transition-opacity lg:hidden",
           mobileOpen ? "opacity-100" : "pointer-events-none opacity-0",
@@ -28,6 +30,7 @@ export function Sidebar({
       />
 
       <aside
+        aria-label="Primary navigation"
         className={cn(
           "fixed inset-y-0 left-0 z-40 flex border-r bg-card transition-all duration-200 lg:translate-x-0",
           collapsed ? "lg:w-20" : "lg:w-72",
@@ -69,7 +72,7 @@ export function Sidebar({
             </Button>
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Main menu">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}

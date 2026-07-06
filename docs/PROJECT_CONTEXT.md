@@ -110,6 +110,16 @@ The frontend and backend run independently. The frontend calls protected backend
 - Added protected impact report endpoint.
 - Added unit tests for replacement, revision, no-match, risk, and downstream record selection.
 
+### Phase 10 - Refactor, Polish, and Architecture Documentation
+
+- Added backend logging configuration.
+- Added request logging middleware.
+- Added shared API error primitives for future centralized error handling.
+- Improved frontend accessibility for navigation, upload dropzone, and loading states.
+- Reused existing UI button primitive in upload flows.
+- Added architecture documentation in `docs/ARCHITECTURE.md`.
+- Added focused unit coverage for shared error primitives.
+
 ## Backend Endpoints
 
 Public:
@@ -308,18 +318,213 @@ Current limitation:
 
 ## Out of Scope So Far
 
-- PDF text extraction.
+- Manual/service/installation/commissioning document parsing.
+- Exact downstream document section matching.
 - External AI/LLM provider integration.
 - Persisted impact report history.
+- Persisted normalized BOM records.
+- Persisted dependency graph snapshots.
+- Frontend integration for graph/report APIs.
 - Server-side token revocation.
 - Virus scanning.
 - Object storage such as S3.
 
-## Next Logical Phase
+## Remaining Implementation Roadmap
 
-Phase 10 should persist normalized BOM data, graph snapshots, and impact reports:
+### Phase 11 - Persistence for Normalized BOMs, Graphs, ECOs, and Reports
+
+Goal: move from on-demand parsing/report generation to persisted application data.
+
+Backend tasks:
 
 - Store normalized parts and assembly relationships.
-- Prepare dependency graph tables for later analysis.
-- Use persisted data to power the frontend Dependency Graph page.
+- Store parsed BOM import batches.
+- Store parsed ECO records.
+- Store dependency graph nodes and edges or graph snapshots.
 - Store generated impact reports for the Reports page.
+- Add Alembic migrations for normalized BOM, ECO, graph, and report tables.
+- Add report history and report detail endpoints.
+- Add delete/archive behavior for uploads, parsed data, and reports.
+
+Frontend tasks:
+
+- Connect Reports page to saved report history.
+- Add report detail view.
+- Show parsed BOM import status.
+- Show parsed ECO records.
+
+Definition of done:
+
+- Reports survive server restarts.
+- Users can revisit generated reports.
+- Graph data can be reused without reparsing the original file on every request.
+
+### Phase 12 - Frontend Data Integration
+
+Goal: connect existing frontend pages to real backend APIs.
+
+Tasks:
+
+- Connect dashboard cards to upload/report/activity APIs.
+- Connect Upload BOM page to parse preview and normalized import results.
+- Connect Upload ECO page to ECO parsing and structured field preview.
+- Connect Dependency Graph page to graph APIs.
+- Connect Reports page to persisted reports.
+- Add consistent loading, empty, error, retry, and success states.
+- Add frontend API client structure by domain.
+
+Definition of done:
+
+- The main navigation pages display real user data instead of placeholders.
+- Users can complete a basic workflow from upload to report in the UI.
+
+### Phase 13 - Background Jobs and Processing Pipeline
+
+Goal: support larger files and longer-running parsing/analysis safely.
+
+Tasks:
+
+- Add job model for upload parsing, graph construction, ECO parsing, and report generation.
+- Add job statuses: queued, processing, completed, failed.
+- Add background worker approach such as Celery/RQ/Arq/FastAPI background tasks for MVP.
+- Add job status endpoints.
+- Add retry and failure metadata.
+- Move heavy parsing/report generation out of request-response paths.
+
+Definition of done:
+
+- Large uploads do not block API requests.
+- Users can see processing progress and failure reasons.
+
+### Phase 14 - Security Hardening
+
+Goal: strengthen production security posture.
+
+Tasks:
+
+- Add CSRF protection for cookie-authenticated mutation endpoints.
+- Add rate limiting for auth and upload endpoints.
+- Add password reset flow.
+- Add email verification.
+- Add server-side logout/token revocation strategy.
+- Add role-based access control.
+- Add audit logging for login, logout, uploads, parsing, graph generation, and report generation.
+- Add virus scanning for uploaded files.
+- Improve MIME/content sniffing beyond extension/content-type checks.
+- Add secure object storage option such as S3, Azure Blob, or GCS.
+
+Definition of done:
+
+- The app has a documented security model and mitigates common auth/upload risks.
+
+### Phase 15 - AI Provider Integration
+
+Goal: replace or augment the rule-based ECO provider with real provider-backed extraction.
+
+Tasks:
+
+- Implement an external provider behind `BaseLLMProvider`.
+- Add provider configuration and secrets management.
+- Add prompt templates and versioning.
+- Add model fallback behavior.
+- Add provider timeout/retry handling.
+- Add structured output validation.
+- Keep deterministic fallback for local development and resilience.
+
+Definition of done:
+
+- ECO parsing can use a real LLM provider without changing API routes or business workflows.
+
+### Phase 16 - Downstream Document Intelligence
+
+Goal: identify exact downstream documents and sections affected by engineering changes.
+
+Tasks:
+
+- Add models for procurement records, installation guides, commissioning procedures, and service manuals.
+- Upload and parse engineering documentation.
+- Extract document sections and part references.
+- Link parts and assemblies to document sections.
+- Identify exact sections needing updates.
+- Generate structured recommended changes per downstream artifact.
+
+Definition of done:
+
+- Impact reports can name the real downstream records and sections that need review.
+
+### Phase 17 - Advanced BOM and ECO Workflows
+
+Goal: support realistic engineering operations beyond single-file analysis.
+
+Tasks:
+
+- Add BOM versioning.
+- Add BOM-to-BOM diffing.
+- Detect added, removed, replaced, and revised parts between BOM versions.
+- Add ECO versioning and approval states.
+- Add manual correction workflow for parsed ECO fields.
+- Add field-level confidence and validation warnings.
+- Add user approval/rejection of suggested updates.
+
+Definition of done:
+
+- Users can manage iterative engineering change workflows, not only one-off analysis.
+
+### Phase 18 - Reporting, Export, and Collaboration
+
+Goal: make impact reports usable by real teams.
+
+Tasks:
+
+- Add PDF export.
+- Add CSV/Excel export.
+- Add report sharing links or team visibility controls.
+- Add comments and review workflow.
+- Add report comparison/versioning.
+- Add sign-off statuses and ownership.
+
+Definition of done:
+
+- Reports can be reviewed, shared, exported, and tracked through a decision workflow.
+
+### Phase 19 - Production Infrastructure
+
+Goal: make the system deployable and maintainable.
+
+Tasks:
+
+- Add Dockerfiles for frontend and backend.
+- Add docker-compose for local full-stack development.
+- Add PostgreSQL production setup.
+- Add deployment configuration.
+- Add CI pipeline for lint, tests, build, and migrations.
+- Add structured logging and error monitoring integration.
+- Add health and readiness endpoints.
+- Add backup and retention strategy for database and uploaded files.
+- Add environment-specific configuration documentation.
+
+Definition of done:
+
+- A new developer can run the full app locally.
+- The app can be deployed with documented production settings.
+
+### Phase 20 - End-to-End QA and Release Readiness
+
+Goal: validate the complete application workflow.
+
+Tasks:
+
+- Add end-to-end tests for login, upload BOM, parse BOM, upload/parse ECO, generate report, view report.
+- Add realistic fixtures for BOM CSV, BOM XLSX, ECO PDFs, and manuals.
+- Add performance testing for larger BOMs.
+- Add accessibility audit.
+- Add security review checklist.
+- Add release checklist.
+
+Definition of done:
+
+- The application is ready for pilot users with a documented set of known limitations.
+
+## Recommended Next Phase
+
+Proceed with Phase 11: Persistence for Normalized BOMs, Graphs, ECOs, and Reports.

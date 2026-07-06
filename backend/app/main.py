@@ -4,16 +4,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.auth import router as auth_router
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.errors import APIError, api_error_handler
+from app.core.logging import configure_logging
 from app.middleware.auth import JWTAuthenticationMiddleware
+from app.middleware.request_logging import RequestLoggingMiddleware
 
 
 def create_app() -> FastAPI:
+    configure_logging()
+
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
-        description="Backend API scaffold for the BOM Tracker application.",
+        description="API for BOM change intelligence workflows.",
     )
 
+    app.add_exception_handler(APIError, api_error_handler)
+    app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(JWTAuthenticationMiddleware)
     app.add_middleware(
         CORSMiddleware,

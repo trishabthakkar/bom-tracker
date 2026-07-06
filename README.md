@@ -1,8 +1,8 @@
 # AI-Assisted BOM Change Intelligence Layer
 
-Phase 1 bootstrap for a modern full-stack MVP that will later analyze engineering changes and downstream BOM impact.
+A modern full-stack MVP for analyzing engineering changes and downstream BOM impact.
 
-This phase only scaffolds the project. It does not implement BOM ingestion, ECO parsing, dependency analysis, AI workflows, or impact reports.
+The application currently supports authentication, secure uploads, BOM parsing, dependency graph analysis, ECO parsing, and deterministic impact report generation. AI provider integration and persisted report workflows are intentionally deferred to later phases.
 
 ## Repository Structure
 
@@ -39,6 +39,9 @@ bom-tracker/
 │   ├── alembic.ini
 │   ├── requirements.txt
 │   └── .env.example
+├── docs/
+│   ├── ARCHITECTURE.md
+│   └── PROJECT_CONTEXT.md
 ├── .gitignore
 ├── package.json
 └── README.md
@@ -177,6 +180,12 @@ Project context is tracked in:
 docs/PROJECT_CONTEXT.md
 ```
 
+Architecture documentation is tracked in:
+
+```text
+docs/ARCHITECTURE.md
+```
+
 ## BOM Parser
 
 Phase 6 adds deterministic BOM parsing for uploaded CSV/XLSX files.
@@ -270,4 +279,5 @@ npm run dev
 npm run build
 npm run lint
 npm run backend:dev
+npm run backend:test
 ```
