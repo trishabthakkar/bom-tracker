@@ -61,6 +61,19 @@ The frontend and backend run independently. The frontend calls protected backend
 - Added upload history endpoint.
 - Added frontend drag-and-drop upload pages with validation, progress bar, and upload history.
 
+### Phase 6 - BOM Parser
+
+- Added deterministic CSV/XLSX BOM parser.
+- Extracts:
+  - part number
+  - description
+  - parent assembly
+  - child assembly
+  - revision
+- Added structured Python parser objects and API response schemas.
+- Added protected parse endpoint for already-uploaded BOM files.
+- Added parser unit tests for CSV, XLSX, aliases, missing required columns, and unsupported extensions.
+
 ## Backend Endpoints
 
 Public:
@@ -75,6 +88,7 @@ Protected:
 - `GET /me`
 - `POST /api/v1/uploads`
 - `GET /api/v1/uploads`
+- `POST /api/v1/bom/parse/{upload_id}`
 
 Authentication is also available under `/api/v1` through the API router for compatibility.
 
@@ -114,6 +128,35 @@ Upload metadata stored:
 - status
 - created timestamp
 
+## BOM Parser
+
+Supported input files:
+
+- `.csv`
+- `.xlsx`
+
+Required normalized field:
+
+- `part_number`
+
+Optional normalized fields:
+
+- `description`
+- `parent_assembly`
+- `child_assembly`
+- `revision`
+
+The parser supports common column aliases such as `Part Number`, `part_no`, `Item No`, `Description`, `desc`, `Parent Assembly`, `parent`, `Child Assembly`, `child`, `Revision`, `rev`, and `Version`.
+
+Current parser behavior:
+
+- Parses already uploaded files by upload id.
+- Ensures the upload belongs to the authenticated user.
+- Rejects non-CSV/XLSX files.
+- Skips rows without a part number.
+- Returns structured rows through the API.
+- Does not persist normalized BOM rows yet.
+
 ## Security Decisions
 
 - Passwords are hashed with bcrypt.
@@ -130,8 +173,6 @@ Upload metadata stored:
 
 ## Out of Scope So Far
 
-- BOM parsing.
-- Excel parsing.
 - PDF text extraction.
 - ECO interpretation.
 - Dependency graph construction.
@@ -143,10 +184,7 @@ Upload metadata stored:
 
 ## Next Logical Phase
 
-Phase 6 should implement BOM parsing and normalization:
+Phase 7 should persist normalized BOM data and build the dependency graph foundation:
 
-- Parse CSV/XLSX files.
-- Detect required columns.
-- Preview parsed rows.
 - Store normalized parts and assembly relationships.
 - Prepare dependency graph tables for later analysis.

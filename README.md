@@ -177,6 +177,32 @@ Project context is tracked in:
 docs/PROJECT_CONTEXT.md
 ```
 
+## BOM Parser
+
+Phase 6 adds deterministic BOM parsing for uploaded CSV/XLSX files.
+
+Endpoint:
+
+```text
+POST /api/v1/bom/parse/{upload_id}
+```
+
+The parser extracts:
+
+- part number
+- description
+- parent assembly
+- child assembly
+- revision
+
+Run parser tests:
+
+```bash
+cd backend
+source .venv/bin/activate
+pytest app/tests
+```
+
 ## Root Scripts
 
 From the repository root:
