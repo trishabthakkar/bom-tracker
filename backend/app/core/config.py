@@ -10,8 +10,17 @@ class Settings(BaseSettings):
     app_name: str = "AI-Assisted BOM Change Intelligence Layer"
     app_version: str = "0.1.0"
     environment: str = "development"
-    database_url: str = "sqlite:///./bom_tracker.db"
-    backend_cors_origins: str = Field(default="http://localhost:5173")
+    database_url: str = (
+        "postgresql+psycopg://bom_tracker:bom_tracker_password@localhost:5432/bom_tracker"
+    )
+    backend_cors_origins: str = Field(
+        default=(
+            "http://localhost:5173,"
+            "http://127.0.0.1:5173,"
+            "http://localhost:5174,"
+            "http://127.0.0.1:5174"
+        )
+    )
     jwt_secret_key: str = DEFAULT_DEV_JWT_SECRET
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60

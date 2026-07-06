@@ -20,6 +20,7 @@ type UploadPageShellProps = {
   acceptedExtensions: string[];
   acceptedLabels: string[];
   maxSizeMb?: number;
+  onUploadComplete?: (upload: UploadedFile) => void | Promise<void>;
 };
 
 export function UploadPageShell({
@@ -29,6 +30,7 @@ export function UploadPageShell({
   acceptedExtensions,
   acceptedLabels,
   maxSizeMb = 25,
+  onUploadComplete,
 }: UploadPageShellProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploads, setUploads] = useState<UploadedFile[]>([]);
@@ -96,6 +98,7 @@ export function UploadPageShell({
       });
       setMessage(`${uploaded.original_filename} uploaded successfully.`);
       setSelectedFile(null);
+      await onUploadComplete?.(uploaded);
       await refreshHistory();
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Upload failed.");

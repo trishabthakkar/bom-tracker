@@ -24,6 +24,7 @@ frontend/src/
   components/
     dashboard/       dashboard cards and sections
     layout/          sidebar, navbar, footer, layout shell
+    reports/         persisted report cards and risk display helpers
     ui/              reusable shadcn-style primitives
     upload/          reusable upload components
   data/              placeholder dashboard data
@@ -37,7 +38,7 @@ Key frontend decisions:
 - `AuthProvider` recovers session state from `/me`.
 - JWTs are not stored in JavaScript; auth relies on the backend HttpOnly cookie.
 - Uploads use `XMLHttpRequest` because browser `fetch` does not expose upload progress events.
-- Domain-specific API clients live in `lib/` until the API surface grows enough to justify a larger client structure.
+- Domain-specific API clients live in `lib/` and cover auth, uploads, BOM imports, ECO records, and reports.
 
 ## Backend Architecture
 
@@ -95,6 +96,18 @@ Key backend decisions:
    - revision
 5. Parsed rows are returned as structured JSON.
 
+## BOM Import Persistence Flow
+
+1. User uploads a BOM.
+2. Frontend calls `/api/v1/bom-imports/from-upload/{upload_id}`.
+3. `services/bom_importer.py` parses the uploaded file.
+4. The service persists:
+   - BOM import batch
+   - normalized BOM part rows
+   - assembly relationships
+   - dependency graph snapshot
+5. Frontend shows import status and a parsed row preview.
+
 ## Dependency Graph Flow
 
 1. API loads an uploaded BOM.
@@ -113,6 +126,13 @@ Key backend decisions:
 3. The current provider is local and rule-based.
 4. Future provider-backed LLM implementations should implement the same interface.
 
+## ECO Record Persistence Flow
+
+1. User enters ECO text or uploads an ECO PDF.
+2. API parses the change using `EngineeringChangeParser`.
+3. `/api/v1/eco-records/*` endpoints persist parsed fields.
+4. Frontend shows saved ECO records for later workflows.
+
 ## Intelligence Flow
 
 1. API verifies uploaded BOM ownership.
@@ -125,6 +145,15 @@ Key backend decisions:
    - downstream record impacts
    - suggested updates
    - risk assessment
+
+## Report Persistence Flow
+
+1. Frontend calls `/api/v1/reports/impact-report`.
+2. Backend reuses or creates a normalized BOM import.
+3. Backend parses and saves the ECO record.
+4. `services/intelligence_layer.py` generates the structured report.
+5. `services/report_persistence.py` stores report metadata and full structured JSON.
+6. Frontend lists saved reports and renders report detail pages.
 
 ## Logging and Errors
 

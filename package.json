@@ -9,7 +9,10 @@
     "frontend:lint": "npm --prefix frontend run lint",
     "build": "npm --prefix frontend run build",
     "lint": "npm --prefix frontend run lint",
-    "backend:dev": "uvicorn app.main:app --reload --app-dir backend",
-    "backend:test": "backend/.venv/bin/pytest"
+    "backend:dev": "backend/.venv/bin/uvicorn app.main:app --reload --app-dir backend",
+    "backend:test": "backend/.venv/bin/pytest",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "cd backend && .venv/bin/alembic upgrade head"
   }
 }

@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.v1.auth import router as auth_router
 from app.api.v1.router import api_router
 from app.core.config import settings
-from app.core.errors import APIError, api_error_handler
+from app.core.errors import APIError, api_error_handler, database_error_handler
 from app.core.logging import configure_logging
 from app.middleware.auth import JWTAuthenticationMiddleware
 from app.middleware.request_logging import RequestLoggingMiddleware
@@ -20,6 +21,7 @@ def create_app() -> FastAPI:
     )
 
     app.add_exception_handler(APIError, api_error_handler)
+    app.add_exception_handler(SQLAlchemyError, database_error_handler)
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(JWTAuthenticationMiddleware)
     app.add_middleware(

@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+import { API_BASE_URL } from "@/lib/apiBase";
 
 export type User = {
   id: number;
@@ -10,19 +10,35 @@ type AuthResponse = {
   user: User;
 };
 
+type APIErrorResponse = {
+  detail?: string;
+  error?: {
+    code?: string;
+    message?: string;
+  };
+};
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+  } catch {
+    throw new Error("API unavailable. Confirm the backend is running on http://localhost:8000.");
+  }
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-    throw new Error(payload?.detail ?? "Authentication request failed.");
+    const payload = (await response.json().catch(() => null)) as APIErrorResponse | null;
+    throw new Error(
+      payload?.error?.message ?? payload?.detail ?? "Authentication request failed.",
+    );
   }
 
   return response.json() as Promise<T>;

@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+import { API_BASE_URL } from "@/lib/apiBase";
 
 export type UploadCategory = "bom" | "eco" | "document";
 
@@ -82,6 +82,18 @@ function parseJson(value: string): unknown {
 }
 
 function getErrorMessage(payload: unknown): string {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "error" in payload &&
+    payload.error &&
+    typeof payload.error === "object" &&
+    "message" in payload.error &&
+    typeof payload.error.message === "string"
+  ) {
+    return payload.error.message;
+  }
+
   if (
     payload &&
     typeof payload === "object" &&

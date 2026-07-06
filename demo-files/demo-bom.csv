@@ -1,0 +1,21 @@
+Part Number,Description,Parent Assembly,Child Assembly,Revision
+ASM-1000,Cooling Skid Final Assembly,,ASM-1100,A
+ASM-1100,Pump Module Assembly,ASM-1000,ASM-1110,B
+PN-1111,Primary circulation pump,ASM-1110,,C
+PN-1112,Pump mounting bracket,ASM-1110,,A
+PN-1113,Vibration isolator set,ASM-1110,,A
+ASM-1200,Cooling Manifold Assembly,ASM-1000,ASM-1210,B
+PN-1211,Stainless manifold block,ASM-1210,,B
+PN-1212,Pressure relief valve,ASM-1210,,C
+PN-1213,Temperature sensor,ASM-1210,,A
+PN-1214,Flow sensor,ASM-1210,,A
+ASM-1300,Control Panel Assembly,ASM-1000,ASM-1310,A
+PN-1311,PLC controller,ASM-1310,,D
+PN-1312,24V power supply,ASM-1310,,B
+PN-1313,E-stop switch,ASM-1310,,A
+PN-1314,Terminal block kit,ASM-1310,,A
+ASM-1400,Installation Hardware Kit,ASM-1000,ASM-1410,A
+PN-1411,M12 anchor bolt,ASM-1410,,A
+PN-1412,Leveling foot,ASM-1410,,A
+PN-1413,Grounding strap,ASM-1410,,B
+PN-1414,Label set,ASM-1410,,A

@@ -15,10 +15,18 @@ frontend/
   React + TypeScript + Vite + Tailwind CSS + React Router
 
 backend/
-  FastAPI + SQLAlchemy + Alembic + SQLite for local MVP development
+  FastAPI + SQLAlchemy + Alembic + PostgreSQL for local MVP development
 ```
 
 The frontend and backend run independently. The frontend calls protected backend APIs with cookie-based authentication.
+
+Local PostgreSQL runs through `docker-compose.yml`. The default development database URL is:
+
+```text
+postgresql+psycopg://bom_tracker:bom_tracker_password@localhost:5432/bom_tracker
+```
+
+Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` and `5174`.
 
 ## Implemented Phases
 
@@ -120,6 +128,33 @@ The frontend and backend run independently. The frontend calls protected backend
 - Added architecture documentation in `docs/ARCHITECTURE.md`.
 - Added focused unit coverage for shared error primitives.
 
+### PostgreSQL Local Development Switch
+
+- Switched default backend configuration from SQLite to PostgreSQL.
+- Added `docker-compose.yml` for local PostgreSQL.
+- Added root scripts for starting PostgreSQL and running migrations.
+- Expanded development CORS origins to support both `localhost` and `127.0.0.1` on Vite ports `5173` and `5174`.
+
+### User Guide Documentation
+
+- Added `docs/USER_GUIDE.md`.
+- Documents current UI features, backend/API-only features, setup steps, database behavior, and troubleshooting.
+- Should be updated whenever new user-facing features or workflows are added.
+
+### Phase 11 - Persistence for Normalized BOMs, Graphs, ECOs, and Reports
+
+- Added persistent normalized BOM import batches.
+- Added persistent BOM part rows and assembly relationships.
+- Added persistent parsed ECO records.
+- Added persistent dependency graph snapshots.
+- Added persistent generated impact reports with full structured report JSON.
+- Added Alembic migration `20260706_0003_persist_engineering_data.py`.
+- Added protected APIs for BOM imports, ECO records, and saved reports.
+- Added report history and report detail views in the frontend.
+- Added Upload BOM import status and parsed row preview after upload.
+- Added Upload ECO text parsing and saved ECO record visibility.
+- Added focused unit coverage for BOM import and report persistence services.
+
 ## Backend Endpoints
 
 Public:
@@ -143,6 +178,18 @@ Protected:
 - `POST /api/v1/eco/parse-text`
 - `POST /api/v1/eco/parse-upload/{upload_id}`
 - `POST /api/v1/intelligence/impact-report`
+- `POST /api/v1/bom-imports/from-upload/{upload_id}`
+- `GET /api/v1/bom-imports`
+- `GET /api/v1/bom-imports/{import_id}`
+- `DELETE /api/v1/bom-imports/{import_id}`
+- `POST /api/v1/eco-records/parse-text`
+- `POST /api/v1/eco-records/parse-upload/{upload_id}`
+- `GET /api/v1/eco-records`
+- `GET /api/v1/eco-records/{record_id}`
+- `POST /api/v1/reports/impact-report`
+- `GET /api/v1/reports`
+- `GET /api/v1/reports/{report_id}`
+- `DELETE /api/v1/reports/{report_id}`
 
 Authentication is also available under `/api/v1` through the API router for compatibility.
 
@@ -237,9 +284,10 @@ Graph endpoint behavior:
   - leaf count
   - cycle presence
 
-Current limitation:
+Persistence behavior:
 
-- Graphs are not persisted or cached yet.
+- Graphs can be rebuilt on demand.
+- Graph snapshots are persisted when a BOM import is created.
 
 ## Engineering Change Parser
 
@@ -298,9 +346,10 @@ Risk logic:
 - Medium-impact change types: revision, addition.
 - Risk score increases with affected parent/child graph scope, downstream record categories, and effective date presence.
 
-Current limitation:
+Persistence behavior:
 
-- Impact reports are returned through the API but not persisted yet.
+- The legacy intelligence endpoint still returns a transient report.
+- `/api/v1/reports/impact-report` generates and persists saved reports.
 
 ## Security Decisions
 
@@ -321,57 +370,27 @@ Current limitation:
 - Manual/service/installation/commissioning document parsing.
 - Exact downstream document section matching.
 - External AI/LLM provider integration.
-- Persisted impact report history.
-- Persisted normalized BOM records.
-- Persisted dependency graph snapshots.
-- Frontend integration for graph/report APIs.
+- Visual frontend dependency graph rendering.
+- Full dashboard integration with real backend activity.
 - Server-side token revocation.
 - Virus scanning.
 - Object storage such as S3.
 
 ## Remaining Implementation Roadmap
 
-### Phase 11 - Persistence for Normalized BOMs, Graphs, ECOs, and Reports
-
-Goal: move from on-demand parsing/report generation to persisted application data.
-
-Backend tasks:
-
-- Store normalized parts and assembly relationships.
-- Store parsed BOM import batches.
-- Store parsed ECO records.
-- Store dependency graph nodes and edges or graph snapshots.
-- Store generated impact reports for the Reports page.
-- Add Alembic migrations for normalized BOM, ECO, graph, and report tables.
-- Add report history and report detail endpoints.
-- Add delete/archive behavior for uploads, parsed data, and reports.
-
-Frontend tasks:
-
-- Connect Reports page to saved report history.
-- Add report detail view.
-- Show parsed BOM import status.
-- Show parsed ECO records.
-
-Definition of done:
-
-- Reports survive server restarts.
-- Users can revisit generated reports.
-- Graph data can be reused without reparsing the original file on every request.
-
 ### Phase 12 - Frontend Data Integration
 
-Goal: connect existing frontend pages to real backend APIs.
+Goal: complete frontend workflows around the persisted backend data.
 
 Tasks:
 
 - Connect dashboard cards to upload/report/activity APIs.
-- Connect Upload BOM page to parse preview and normalized import results.
-- Connect Upload ECO page to ECO parsing and structured field preview.
-- Connect Dependency Graph page to graph APIs.
-- Connect Reports page to persisted reports.
+- Improve Upload BOM page with import detail drilldown and re-import controls.
+- Improve Upload ECO page with uploaded PDF parse/save controls.
+- Connect Dependency Graph page to graph snapshot and graph analysis APIs.
+- Add report generation helpers that select real uploaded BOMs instead of requiring typed ids.
 - Add consistent loading, empty, error, retry, and success states.
-- Add frontend API client structure by domain.
+- Add frontend API client coverage for remaining graph/dashboard workflows.
 
 Definition of done:
 
@@ -527,4 +546,4 @@ Definition of done:
 
 ## Recommended Next Phase
 
-Proceed with Phase 11: Persistence for Normalized BOMs, Graphs, ECOs, and Reports.
+Proceed with Phase 12: Frontend Data Integration.

@@ -2,7 +2,7 @@
 
 A modern full-stack MVP for analyzing engineering changes and downstream BOM impact.
 
-The application currently supports authentication, secure uploads, BOM parsing, dependency graph analysis, ECO parsing, and deterministic impact report generation. AI provider integration and persisted report workflows are intentionally deferred to later phases.
+The application currently supports authentication, secure uploads, BOM parsing, persisted BOM imports, dependency graph analysis, persisted ECO records, and saved deterministic impact reports. AI provider integration is intentionally deferred to later phases.
 
 ## Repository Structure
 
@@ -87,8 +87,20 @@ Stack:
 - FastAPI
 - SQLAlchemy
 - Alembic
-- SQLite by default for local development
-- PostgreSQL-ready via `DATABASE_URL`
+- PostgreSQL by default for local development
+- SQLite-compatible via `DATABASE_URL` if needed for quick experiments
+
+Start PostgreSQL:
+
+```bash
+npm run db:up
+```
+
+If Docker reports a permission error, start it from a terminal with Docker access or run:
+
+```bash
+sudo docker compose up -d postgres
+```
 
 Run independently:
 
@@ -98,19 +110,23 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
 Useful commands:
 
 ```bash
+npm run db:up
+npm run db:migrate
+npm run db:down
 alembic revision --autogenerate -m "describe change"
 alembic upgrade head
 ```
 
 Default URLs:
 
-- Frontend: `http://localhost:5173`
+- Frontend: `http://localhost:5173` or `http://localhost:5174`
 - Backend API: `http://localhost:8000`
 - Backend docs: `http://localhost:8000/docs`
 - Backend health: `http://localhost:8000/api/v1/health`
@@ -129,9 +145,7 @@ GET  /me
 Run migrations before using authentication:
 
 ```bash
-cd backend
-source .venv/bin/activate
-alembic upgrade head
+npm run db:migrate
 ```
 
 Security defaults:
@@ -184,6 +198,12 @@ Architecture documentation is tracked in:
 
 ```text
 docs/ARCHITECTURE.md
+```
+
+User-facing feature documentation is tracked in:
+
+```text
+docs/USER_GUIDE.md
 ```
 
 ## BOM Parser
@@ -251,12 +271,15 @@ The parser uses an LLM abstraction layer with a local rule-based provider. Exter
 
 ## Intelligence Layer
 
-Phase 9 adds deterministic impact report generation.
+Phase 9 adds deterministic impact report generation. Phase 11 adds persisted impact reports.
 
 Endpoint:
 
 ```text
 POST /api/v1/intelligence/impact-report
+POST /api/v1/reports/impact-report
+GET  /api/v1/reports
+GET  /api/v1/reports/{report_id}
 ```
 
 Request body:
@@ -268,7 +291,26 @@ Request body:
 }
 ```
 
-The response includes affected assemblies, downstream record impacts, suggested updates, and risk assessment. Reports are not persisted yet.
+The response includes affected assemblies, downstream record impacts, suggested updates, and risk assessment. Use `/api/v1/reports/impact-report` when the report should be saved and visible in the Reports page.
+
+## Persisted Engineering Data
+
+Phase 11 persists normalized engineering records.
+
+Endpoints:
+
+```text
+POST /api/v1/bom-imports/from-upload/{upload_id}
+GET  /api/v1/bom-imports
+GET  /api/v1/bom-imports/{import_id}
+POST /api/v1/eco-records/parse-text
+GET  /api/v1/eco-records
+POST /api/v1/reports/impact-report
+GET  /api/v1/reports
+GET  /api/v1/reports/{report_id}
+```
+
+The frontend now shows normalized BOM import status, saved ECO records, saved report history, and report detail pages.
 
 ## Root Scripts
 
@@ -280,4 +322,7 @@ npm run build
 npm run lint
 npm run backend:dev
 npm run backend:test
+npm run db:up
+npm run db:migrate
+npm run db:down
 ```

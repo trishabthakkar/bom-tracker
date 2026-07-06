@@ -1,5 +1,6 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class APIError(Exception):
@@ -25,6 +26,22 @@ async def api_error_handler(request: Request, error: APIError) -> JSONResponse:
             "error": {
                 "code": error.code,
                 "message": error.message,
+                "path": request.url.path,
+            }
+        },
+    )
+
+
+async def database_error_handler(
+    request: Request,
+    error: SQLAlchemyError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        content={
+            "error": {
+                "code": "database_unavailable",
+                "message": "Database unavailable. Please start PostgreSQL and run migrations.",
                 "path": request.url.path,
             }
         },
