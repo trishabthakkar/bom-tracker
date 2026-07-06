@@ -2,7 +2,7 @@
 
 A modern full-stack MVP for analyzing engineering changes and downstream BOM impact.
 
-The application currently supports authentication, secure uploads, BOM parsing, persisted BOM imports, dependency graph analysis, persisted ECO records, and saved deterministic impact reports. AI provider integration is intentionally deferred to later phases.
+The application currently supports authentication, secure uploads, BOM parsing, persisted BOM imports, dependency graph analysis, persisted ECO records, saved deterministic impact reports, and frontend workflows connected to real backend data. AI provider integration is intentionally deferred to later phases.
 
 ## Repository Structure
 
@@ -295,7 +295,7 @@ The response includes affected assemblies, downstream record impacts, suggested 
 
 ## Persisted Engineering Data
 
-Phase 11 persists normalized engineering records.
+Phase 11 persists normalized engineering records. Phase 12 connects the main frontend workflows to those records.
 
 Endpoints:
 
@@ -304,13 +304,14 @@ POST /api/v1/bom-imports/from-upload/{upload_id}
 GET  /api/v1/bom-imports
 GET  /api/v1/bom-imports/{import_id}
 POST /api/v1/eco-records/parse-text
+POST /api/v1/eco-records/parse-upload/{upload_id}
 GET  /api/v1/eco-records
 POST /api/v1/reports/impact-report
 GET  /api/v1/reports
 GET  /api/v1/reports/{report_id}
 ```
 
-The frontend now shows normalized BOM import status, saved ECO records, saved report history, and report detail pages.
+The frontend now shows live dashboard metrics, normalized BOM import status, saved ECO records, saved report history, report detail pages, report generation from a BOM import selector, automatic ECO PDF parsing after upload, and a dependency graph explorer.
 
 ## Root Scripts
 

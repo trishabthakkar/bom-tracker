@@ -15,11 +15,12 @@ Current MVP capabilities:
 - Dependency graph construction through the backend API.
 - Plain-text and PDF ECO parsing, with persisted text ECO records.
 - Deterministic saved impact report generation.
-- Engineering dashboard shell with navigation, dark mode, and placeholder operational views.
+- Engineering dashboard with real upload, report, import, and ECO activity data.
+- Frontend report generation, ECO upload parsing, and dependency graph exploration.
 
 Important current limitation:
 
-- Dashboard metrics and dependency graph visualization are not fully connected to real backend data yet. This is expected before Phase 12.
+- The dependency graph page is data-driven, but it is not yet a full interactive node-link canvas.
 
 ## How To Run The App
 
@@ -188,13 +189,14 @@ Use quick actions to move to upload, report, and dependency graph areas.
 
 ### How It Works
 
-Dashboard data is currently realistic placeholder data stored in the frontend. It is not yet connected to backend report or graph APIs.
+The dashboard calls the authenticated backend APIs for:
 
-This means:
+- upload history
+- saved BOM imports
+- saved ECO records
+- saved impact reports
 
-- It is useful for product flow and UI validation.
-- It does not yet reflect real uploaded files or generated reports.
-- Real dashboard integration is planned for Phase 12.
+It combines those records into operational metrics, recent upload rows, report summaries, and recent activity. If an API request fails, the page shows an error state with a retry action.
 
 ## Upload BOM
 
@@ -282,7 +284,8 @@ Steps:
 
 1. Drag an ECO PDF into the upload area, or click to select it.
 2. Click `Upload securely`.
-3. Check upload history for the uploaded ECO file.
+3. The frontend automatically asks the backend to parse and save the uploaded ECO.
+4. Review the saved ECO record list below the upload area.
 
 ### How It Works
 
@@ -292,7 +295,13 @@ The frontend uses the same upload system as BOM uploads, but sends:
 upload_category=eco
 ```
 
-The upload is stored and tracked exactly like BOM files. PDF parsing is available through the backend API.
+The upload is stored and tracked exactly like BOM files. After upload, the page calls:
+
+```text
+POST /api/v1/eco-records/parse-upload/{upload_id}
+```
+
+That extracts text from the PDF, parses structured ECO fields, and persists the ECO record.
 
 The page also includes a plain-text ECO parser. Paste or edit ECO text and click `Save parsed ECO` to persist extracted fields.
 
@@ -327,7 +336,22 @@ Only files owned by the current authenticated user are returned.
 
 ### How To Use It
 
-This feature is currently available through the backend API.
+Open:
+
+```text
+/dependency-graph
+```
+
+Select a normalized BOM import from the dropdown. The page builds graph data from the selected BOM upload and shows:
+
+- graph statistics
+- whether cycles were detected
+- a part lookup for affected parents and children
+- graph edges in table form
+
+You can enter a part number or assembly id, then run lookup to see connected upstream and downstream nodes.
+
+The same data is also available through the backend API.
 
 First upload a BOM through the UI or API. Then parse it with:
 
@@ -426,6 +450,8 @@ parent_assembly -> part_number
 ```
 
 The graph can be rebuilt on demand from the uploaded file. Graph snapshots are also persisted when a BOM import is created.
+
+The current frontend graph explorer is intentionally table/list based for the MVP. A richer visual graph canvas is planned later.
 
 ## Engineering Change Parsing
 
@@ -538,19 +564,18 @@ Open:
 
 The page supports:
 
-- generating a saved impact report from a BOM upload id and ECO text
+- generating a saved impact report from a selected normalized BOM import and ECO text
 - listing saved reports
 - opening report detail pages
 
 Steps:
 
 1. Upload and import a BOM.
-2. Note the uploaded BOM id from upload history.
-3. Open Reports.
-4. Enter the BOM upload id.
-5. Enter ECO text.
-6. Click `Generate`.
-7. Open the saved report from the list.
+2. Open Reports.
+3. Select the normalized BOM import.
+4. Enter ECO text.
+5. Click `Generate`.
+6. Open the saved report from the list.
 
 ## Dependency Graph Page
 
@@ -562,13 +587,7 @@ Open:
 /dependency-graph
 ```
 
-### Current Status
-
-This page is a placeholder. The graph backend APIs exist, but the frontend visualization is not connected yet.
-
-### Planned Behavior
-
-This page will eventually visualize assemblies, parts, parent/child relationships, and affected dependency paths.
+The page shows real graph data from the backend. It is currently optimized for inspection through metrics, lookup results, and an edge table. A future phase can add an interactive visual node-link graph.
 
 ## History Page
 
@@ -749,20 +768,11 @@ Both are allowed by backend CORS config.
 
 ## Current MVP Limitations
 
-- Dashboard data is placeholder data.
-- Dependency Graph page is not connected to graph APIs.
-- Reports require manually typing a BOM upload id instead of selecting from a dropdown.
-- Dependency graph snapshots are persisted but not visually rendered yet.
-- Uploaded PDF ECO parsing is API-backed but not wired to a dedicated frontend parse button yet.
+- Dependency graph data is shown through metrics, lookup lists, and edge tables, not a full interactive graph canvas yet.
 - No external LLM provider is connected yet.
 - No PDF export, report sharing, approval workflow, or team permissions yet.
+- Long-running parsing and report generation still run in request-response paths.
 
 ## Recommended Next Phases
 
-Phase 12 should connect the frontend pages to real backend data:
-
-- dashboard
-- dependency graph
-- BOM/report selection workflows
-- uploaded PDF ECO parsing
-- impact report workflow
+Phase 13 should add a background jobs and processing pipeline so larger files and longer analyses can run safely with visible progress and retry states.

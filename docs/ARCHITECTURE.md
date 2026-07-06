@@ -27,7 +27,7 @@ frontend/src/
     reports/         persisted report cards and risk display helpers
     ui/              reusable shadcn-style primitives
     upload/          reusable upload components
-  data/              placeholder dashboard data
+  data/              shared dashboard labels and quick-action definitions
   lib/               API clients and shared utilities
   pages/             route-level page components
 ```
@@ -38,7 +38,8 @@ Key frontend decisions:
 - `AuthProvider` recovers session state from `/me`.
 - JWTs are not stored in JavaScript; auth relies on the backend HttpOnly cookie.
 - Uploads use `XMLHttpRequest` because browser `fetch` does not expose upload progress events.
-- Domain-specific API clients live in `lib/` and cover auth, uploads, BOM imports, ECO records, and reports.
+- Domain-specific API clients live in `lib/` and cover auth, uploads, BOM imports, ECO records, graph analysis, and reports.
+- Dashboard and workflow pages load authenticated backend data directly instead of relying on static placeholders.
 
 ## Backend Architecture
 
@@ -110,14 +111,17 @@ Key backend decisions:
 
 ## Dependency Graph Flow
 
-1. API loads an uploaded BOM.
-2. BOM parser returns structured rows.
-3. `services/dependency_graph.py` builds a NetworkX directed graph.
-4. Direction is:
+1. User selects a normalized BOM import on the Dependency Graph page.
+2. Frontend calls graph API endpoints with the import's source upload id.
+3. API loads the uploaded BOM.
+4. BOM parser returns structured rows.
+5. `services/dependency_graph.py` builds a NetworkX directed graph.
+6. Direction is:
    - parent assembly to child assembly
    - child assembly to part number
    - fallback parent assembly to part number
-5. API returns graph nodes, edges, parents, children, paths, or statistics.
+7. API returns graph nodes, edges, parents, children, paths, or statistics.
+8. Frontend renders graph statistics, part lookup results, and edge tables.
 
 ## ECO Parsing Flow
 

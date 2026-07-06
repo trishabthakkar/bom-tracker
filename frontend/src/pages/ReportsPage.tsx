@@ -3,6 +3,7 @@ import { AlertCircle, FileSearch, RefreshCw, Wand2 } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { ReportSummaryCard } from "@/components/reports/ReportSummaryCard";
 import { Button } from "@/components/ui/button";
+import { getBomImports, type BomImport } from "@/lib/bomImportApi";
 import {
   createImpactReport,
   getReports,
@@ -11,7 +12,8 @@ import {
 
 export function ReportsPage() {
   const [reports, setReports] = useState<SavedImpactReport[]>([]);
-  const [bomUploadId, setBomUploadId] = useState("1");
+  const [bomImports, setBomImports] = useState<BomImport[]>([]);
+  const [selectedUploadId, setSelectedUploadId] = useState("");
   const [ecoText, setEcoText] = useState(
     "Replace old part PN-1212 with new part PN-2212. Reason: supplier obsolescence. Effective date: 2026-08-15.",
   );
@@ -23,7 +25,10 @@ export function ReportsPage() {
   const refreshReports = useCallback(async () => {
     setLoading(true);
     try {
-      setReports(await getReports());
+      const [savedReports, savedImports] = await Promise.all([getReports(), getBomImports()]);
+      setReports(savedReports);
+      setBomImports(savedImports);
+      setSelectedUploadId((current) => current || String(savedImports[0]?.upload_id ?? ""));
     } catch (reportError) {
       setError(reportError instanceof Error ? reportError.message : "Unable to load reports.");
     } finally {
@@ -42,7 +47,7 @@ export function ReportsPage() {
 
     try {
       const report = await createImpactReport({
-        bomUploadId: Number(bomUploadId),
+        bomUploadId: Number(selectedUploadId),
         ecoText,
       });
       setMessage(`Generated saved report #${report.id}.`);
@@ -74,15 +79,21 @@ export function ReportsPage() {
         title="Generate saved impact report"
         description="Use an uploaded BOM id and ECO text to generate a persisted report."
       >
-        <div className="grid gap-4 lg:grid-cols-[180px_1fr_auto] lg:items-end">
+        <div className="grid gap-4 lg:grid-cols-[280px_1fr_auto] lg:items-end">
           <label className="space-y-2 text-sm">
-            <span className="font-medium">BOM upload id</span>
-            <input
+            <span className="font-medium">Normalized BOM</span>
+            <select
               className="h-10 w-full rounded-md border bg-background px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              value={bomUploadId}
-              onChange={(event) => setBomUploadId(event.target.value)}
-              inputMode="numeric"
-            />
+              value={selectedUploadId}
+              onChange={(event) => setSelectedUploadId(event.target.value)}
+            >
+              <option value="">Select a BOM import</option>
+              {bomImports.map((bomImport) => (
+                <option key={bomImport.id} value={bomImport.upload_id}>
+                  #{bomImport.id} {bomImport.filename} ({bomImport.row_count} rows)
+                </option>
+              ))}
+            </select>
           </label>
           <label className="space-y-2 text-sm">
             <span className="font-medium">ECO text</span>
@@ -94,7 +105,7 @@ export function ReportsPage() {
           </label>
           <Button
             type="button"
-            disabled={generating || !Number(bomUploadId) || ecoText.trim().length === 0}
+            disabled={generating || !Number(selectedUploadId) || ecoText.trim().length === 0}
             onClick={handleGenerateReport}
           >
             <Wand2 className="h-4 w-4" />

@@ -56,7 +56,7 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 
 - Replaced dashboard placeholder with realistic placeholder cards.
 - Added recent uploads, recent reports, quick actions, recent activity, metrics, badges, and loading skeletons.
-- Kept data in `frontend/src/data/dashboardData.ts` so future API integration can replace placeholder data cleanly.
+- Kept shared dashboard labels and quick actions in `frontend/src/data/dashboardData.ts`; Phase 12 later connected the dashboard records to backend data.
 
 ### Phase 5 - Secure File Uploads
 
@@ -154,6 +154,15 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 - Added Upload BOM import status and parsed row preview after upload.
 - Added Upload ECO text parsing and saved ECO record visibility.
 - Added focused unit coverage for BOM import and report persistence services.
+
+### Phase 12 - Frontend Data Integration
+
+- Connected Dashboard metrics, recent uploads, reports, and activity to real backend APIs.
+- Replaced manual report BOM upload id entry with a normalized BOM import selector.
+- Connected uploaded ECO PDFs to saved ECO parsing after upload.
+- Replaced Dependency Graph placeholder with a real graph explorer.
+- Added graph API client for build, stats, affected parents, and affected children.
+- Added frontend loading, empty, error, retry, and selection states around persisted workflows.
 
 ## Backend Endpoints
 
@@ -371,31 +380,12 @@ Persistence behavior:
 - Exact downstream document section matching.
 - External AI/LLM provider integration.
 - Visual frontend dependency graph rendering.
-- Full dashboard integration with real backend activity.
+- Background job processing for long-running parsing and report generation.
 - Server-side token revocation.
 - Virus scanning.
 - Object storage such as S3.
 
 ## Remaining Implementation Roadmap
-
-### Phase 12 - Frontend Data Integration
-
-Goal: complete frontend workflows around the persisted backend data.
-
-Tasks:
-
-- Connect dashboard cards to upload/report/activity APIs.
-- Improve Upload BOM page with import detail drilldown and re-import controls.
-- Improve Upload ECO page with uploaded PDF parse/save controls.
-- Connect Dependency Graph page to graph snapshot and graph analysis APIs.
-- Add report generation helpers that select real uploaded BOMs instead of requiring typed ids.
-- Add consistent loading, empty, error, retry, and success states.
-- Add frontend API client coverage for remaining graph/dashboard workflows.
-
-Definition of done:
-
-- The main navigation pages display real user data instead of placeholders.
-- Users can complete a basic workflow from upload to report in the UI.
 
 ### Phase 13 - Background Jobs and Processing Pipeline
 
@@ -546,4 +536,4 @@ Definition of done:
 
 ## Recommended Next Phase
 
-Proceed with Phase 12: Frontend Data Integration.
+Proceed with Phase 13: Background Jobs and Processing Pipeline.

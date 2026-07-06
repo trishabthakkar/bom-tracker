@@ -45,6 +45,19 @@ export async function saveEcoText(text: string): Promise<EcoRecordDetail> {
   return response.json() as Promise<EcoRecordDetail>;
 }
 
+export async function saveEcoUpload(uploadId: number): Promise<EcoRecordDetail> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/eco-records/parse-upload/${uploadId}`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiErrorMessage(response, "Unable to save ECO upload."));
+  }
+
+  return response.json() as Promise<EcoRecordDetail>;
+}
+
 export async function getEcoRecords(): Promise<EcoRecord[]> {
   const response = await fetch(`${API_BASE_URL}/api/v1/eco-records`, {
     credentials: "include",

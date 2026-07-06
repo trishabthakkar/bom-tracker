@@ -4,7 +4,8 @@ import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UploadPageShell } from "@/components/upload/UploadPageShell";
-import { getEcoRecords, saveEcoText, type EcoRecord } from "@/lib/ecoRecordApi";
+import { getEcoRecords, saveEcoText, saveEcoUpload, type EcoRecord } from "@/lib/ecoRecordApi";
+import type { UploadedFile } from "@/lib/uploadApi";
 
 export function UploadEcoPage() {
   const [ecoText, setEcoText] = useState(
@@ -47,6 +48,22 @@ export function UploadEcoPage() {
     }
   }
 
+  async function handleUploadComplete(upload: UploadedFile) {
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const saved = await saveEcoUpload(upload.id);
+      setMessage(`Uploaded and saved ECO record #${saved.id}.`);
+      await refreshRecords();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to parse ECO upload.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <UploadPageShell
@@ -55,6 +72,7 @@ export function UploadEcoPage() {
         category="eco"
         acceptedExtensions={[".pdf"]}
         acceptedLabels={["PDF"]}
+        onUploadComplete={handleUploadComplete}
       />
 
       <DashboardCard
