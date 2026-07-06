@@ -1,12 +1,13 @@
-import { FileText } from "lucide-react";
-import { PagePlaceholder } from "@/pages/PagePlaceholder";
+import { UploadPageShell } from "@/components/upload/UploadPageShell";
 
 export function UploadEcoPage() {
   return (
-    <PagePlaceholder
+    <UploadPageShell
       title="Upload ECO"
-      description="Engineering change order intake placeholder."
-      icon={FileText}
+      description="Upload ECO PDFs or structured CSV/XLSX exports for future change interpretation workflows."
+      category="eco"
+      acceptedExtensions={[".pdf", ".csv", ".xlsx"]}
+      acceptedLabels={["PDF", "CSV", "XLSX"]}
     />
   );
 }

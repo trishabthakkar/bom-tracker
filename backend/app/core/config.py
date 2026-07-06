@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     jwt_secret_key: str = DEFAULT_DEV_JWT_SECRET
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
+    upload_directory: str = "uploads"
+    max_upload_size_mb: int = 25
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
@@ -29,6 +31,10 @@ class Settings(BaseSettings):
     @property
     def secure_cookies(self) -> bool:
         return self.environment.lower() in {"production", "staging"}
+
+    @property
+    def max_upload_size_bytes(self) -> int:
+        return self.max_upload_size_mb * 1024 * 1024
 
     @model_validator(mode="after")
     def validate_production_secrets(self) -> "Settings":

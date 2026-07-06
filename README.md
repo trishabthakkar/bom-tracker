@@ -140,6 +140,43 @@ Security defaults:
 - `JWT_SECRET_KEY` must be changed for production.
 - `/me` is protected by JWT middleware plus a current-user dependency.
 
+## Secure Uploads
+
+Phase 5 adds authenticated file uploads for future parsing modules.
+
+Supported file types:
+
+- `.csv`
+- `.xlsx`
+- `.pdf`
+
+Default upload limit:
+
+- `25 MB`
+
+Backend endpoints:
+
+```text
+POST /api/v1/uploads
+GET  /api/v1/uploads
+```
+
+Run migrations before using uploads:
+
+```bash
+cd backend
+source .venv/bin/activate
+alembic upgrade head
+```
+
+Upload files are stored locally under `backend/uploads` by default. The directory is ignored by git.
+
+Project context is tracked in:
+
+```text
+docs/PROJECT_CONTEXT.md
+```
+
 ## Root Scripts
 
 From the repository root:

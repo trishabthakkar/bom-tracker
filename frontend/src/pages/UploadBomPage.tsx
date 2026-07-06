@@ -1,12 +1,13 @@
-import { Upload } from "lucide-react";
-import { PagePlaceholder } from "@/pages/PagePlaceholder";
+import { UploadPageShell } from "@/components/upload/UploadPageShell";
 
 export function UploadBomPage() {
   return (
-    <PagePlaceholder
+    <UploadPageShell
       title="Upload BOM"
-      description="BOM upload and validation workflow placeholder."
-      icon={Upload}
+      description="Upload CSV or Excel BOM files so future parsing modules can normalize assemblies, parts, and dependencies."
+      category="bom"
+      acceptedExtensions={[".csv", ".xlsx"]}
+      acceptedLabels={["CSV", "XLSX"]}
     />
   );
 }
