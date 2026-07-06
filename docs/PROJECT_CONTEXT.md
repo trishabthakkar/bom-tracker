@@ -98,6 +98,18 @@ The frontend and backend run independently. The frontend calls protected backend
 - Added protected ECO parsing endpoints.
 - Added unit tests for text parsing and provider abstraction.
 
+### Phase 9 - Intelligence Layer
+
+- Added deterministic intelligence service that combines:
+  - parsed BOM data
+  - dependency graph
+  - parsed ECO data
+- Generates structured impact reports.
+- Determines affected assemblies, downstream record categories, risk level, risk reasons, and suggested updates.
+- Keeps business logic in `services/intelligence_layer.py`.
+- Added protected impact report endpoint.
+- Added unit tests for replacement, revision, no-match, risk, and downstream record selection.
+
 ## Backend Endpoints
 
 Public:
@@ -120,6 +132,7 @@ Protected:
 - `GET /api/v1/graph/{upload_id}/stats`
 - `POST /api/v1/eco/parse-text`
 - `POST /api/v1/eco/parse-upload/{upload_id}`
+- `POST /api/v1/intelligence/impact-report`
 
 Authentication is also available under `/api/v1` through the API router for compatibility.
 
@@ -246,6 +259,39 @@ Current behavior:
 - PDF parsing extracts text only before structured ECO parsing.
 - Impact reports are not generated in this phase.
 
+## Intelligence Layer
+
+Input:
+
+- Parsed BOM rows.
+- Dependency graph.
+- Parsed ECO.
+
+Output:
+
+- Structured impact report.
+- Affected assemblies.
+- Affected downstream record categories.
+- Risk assessment.
+- Suggested updates.
+
+Downstream record categories:
+
+- procurement
+- installation guides
+- commissioning procedures
+- service manuals
+
+Risk logic:
+
+- High-impact change types: replacement, obsolescence, removal.
+- Medium-impact change types: revision, addition.
+- Risk score increases with affected parent/child graph scope, downstream record categories, and effective date presence.
+
+Current limitation:
+
+- Impact reports are returned through the API but not persisted yet.
+
 ## Security Decisions
 
 - Passwords are hashed with bcrypt.
@@ -264,15 +310,16 @@ Current behavior:
 
 - PDF text extraction.
 - External AI/LLM provider integration.
-- Impact report generation from real data.
+- Persisted impact report history.
 - Server-side token revocation.
 - Virus scanning.
 - Object storage such as S3.
 
 ## Next Logical Phase
 
-Phase 9 should persist normalized BOM data and graph snapshots:
+Phase 10 should persist normalized BOM data, graph snapshots, and impact reports:
 
 - Store normalized parts and assembly relationships.
 - Prepare dependency graph tables for later analysis.
 - Use persisted data to power the frontend Dependency Graph page.
+- Store generated impact reports for the Reports page.

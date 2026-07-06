@@ -240,6 +240,27 @@ Extracted fields:
 
 The parser uses an LLM abstraction layer with a local rule-based provider. External provider integration is intentionally deferred.
 
+## Intelligence Layer
+
+Phase 9 adds deterministic impact report generation.
+
+Endpoint:
+
+```text
+POST /api/v1/intelligence/impact-report
+```
+
+Request body:
+
+```json
+{
+  "bom_upload_id": 1,
+  "eco_text": "Replace old part PN-100 with new part PN-200. Reason: supplier obsolescence. Effective date: 2026-08-15."
+}
+```
+
+The response includes affected assemblies, downstream record impacts, suggested updates, and risk assessment. Reports are not persisted yet.
+
 ## Root Scripts
 
 From the repository root:
