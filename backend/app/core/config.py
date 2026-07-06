@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     upload_directory: str = "uploads"
     max_upload_size_mb: int = 25
+    llm_provider: str = "rule_based"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

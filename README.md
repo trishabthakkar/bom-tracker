@@ -219,6 +219,27 @@ GET  /api/v1/graph/{upload_id}/stats
 
 The graph is directed from parent assembly to child assembly, then from child assembly to part number when both values exist. If no child assembly is provided, it falls back to parent assembly to part number.
 
+## Engineering Change Parser
+
+Phase 8 adds structured ECO parsing for plain text and uploaded PDFs.
+
+Endpoints:
+
+```text
+POST /api/v1/eco/parse-text
+POST /api/v1/eco/parse-upload/{upload_id}
+```
+
+Extracted fields:
+
+- change type
+- old part
+- new part
+- reason
+- effective date
+
+The parser uses an LLM abstraction layer with a local rule-based provider. External provider integration is intentionally deferred.
+
 ## Root Scripts
 
 From the repository root:

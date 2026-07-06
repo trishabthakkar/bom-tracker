@@ -83,6 +83,21 @@ The frontend and backend run independently. The frontend calls protected backend
 - Added protected graph endpoints for graph build, affected parents, affected children, dependency paths, and graph statistics.
 - Added graph unit tests for construction, traversal, paths, and statistics.
 
+### Phase 8 - Engineering Change Parsing
+
+- Added Engineering Change parsing for plain text.
+- Added PDF text extraction for uploaded ECO PDFs.
+- Extracts:
+  - change type
+  - old part
+  - new part
+  - reason
+  - effective date
+- Added provider-neutral LLM abstraction layer.
+- Added local rule-based provider so the system runs without external API keys.
+- Added protected ECO parsing endpoints.
+- Added unit tests for text parsing and provider abstraction.
+
 ## Backend Endpoints
 
 Public:
@@ -103,6 +118,8 @@ Protected:
 - `GET /api/v1/graph/{upload_id}/children/{part_number}`
 - `GET /api/v1/graph/{upload_id}/paths?source={source}&target={target}`
 - `GET /api/v1/graph/{upload_id}/stats`
+- `POST /api/v1/eco/parse-text`
+- `POST /api/v1/eco/parse-upload/{upload_id}`
 
 Authentication is also available under `/api/v1` through the API router for compatibility.
 
@@ -201,6 +218,34 @@ Current limitation:
 
 - Graphs are not persisted or cached yet.
 
+## Engineering Change Parser
+
+Supported inputs:
+
+- Plain text
+- Uploaded PDF
+
+Extracted fields:
+
+- `change_type`
+- `old_part`
+- `new_part`
+- `reason`
+- `effective_date`
+
+LLM abstraction:
+
+- `BaseLLMProvider` defines the provider contract.
+- `RuleBasedLLMProvider` is the current local implementation.
+- Future providers can implement the same interface without changing API routes.
+
+Current behavior:
+
+- Plain text is parsed directly through `/api/v1/eco/parse-text`.
+- Uploaded PDFs are loaded by upload id and must belong to the authenticated user.
+- PDF parsing extracts text only before structured ECO parsing.
+- Impact reports are not generated in this phase.
+
 ## Security Decisions
 
 - Passwords are hashed with bcrypt.
@@ -218,8 +263,7 @@ Current limitation:
 ## Out of Scope So Far
 
 - PDF text extraction.
-- ECO interpretation.
-- AI/LLM services.
+- External AI/LLM provider integration.
 - Impact report generation from real data.
 - Server-side token revocation.
 - Virus scanning.
@@ -227,7 +271,7 @@ Current limitation:
 
 ## Next Logical Phase
 
-Phase 8 should persist normalized BOM data and graph snapshots:
+Phase 9 should persist normalized BOM data and graph snapshots:
 
 - Store normalized parts and assembly relationships.
 - Prepare dependency graph tables for later analysis.
