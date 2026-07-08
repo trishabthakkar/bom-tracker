@@ -1,0 +1,21 @@
+Engineering Change Order: ECO-2026-0712
+Title: Replace pressure relief valve in cooling manifold assembly
+
+Change type: part replacement
+Old part: PN-1212
+New part: PN-2212
+Reason: The current pressure relief valve PN-1212 is being replaced because the supplier has issued an end-of-life notice and the replacement valve has improved pressure stability for field service conditions.
+Effective date: 2026-08-15
+
+Affected product context:
+The change applies to the Cooling Manifold Assembly used in the Cooling Skid Final Assembly.
+
+Implementation notes:
+- Replace PN-1212 Pressure relief valve with PN-2212 High-stability pressure relief valve.
+- Review procurement records for supplier, lead time, cost, and approved vendor details.
+- Review installation guide torque and orientation instructions for the valve.
+- Review commissioning pressure test procedure and acceptance criteria.
+- Review service manual replacement procedure and spare parts list.
+
+Expected risk:
+Medium. The affected part is inside the cooling manifold path and may impact procurement, installation, commissioning, and service documentation.

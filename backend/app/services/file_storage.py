@@ -15,6 +15,8 @@ ALLOWED_MIME_TYPES = {
     ".pdf": {"application/pdf", "application/octet-stream"},
 }
 CHUNK_SIZE_BYTES = 1024 * 1024
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = BACKEND_ROOT.parent
 
 
 class StoredFile:
@@ -46,6 +48,41 @@ def validate_upload_category(upload_category: str) -> str:
     return normalized
 
 
+def get_upload_directory() -> Path:
+    upload_directory = Path(settings.upload_directory)
+    if upload_directory.is_absolute():
+        return upload_directory
+
+    return BACKEND_ROOT / upload_directory
+
+
+def resolve_storage_path(storage_path: str | Path) -> Path:
+    path = Path(storage_path)
+    if path.is_absolute():
+        return path
+
+    candidates = [
+        Path.cwd() / path,
+        BACKEND_ROOT / path,
+        PROJECT_ROOT / path,
+    ]
+
+    if path.name:
+        candidates.extend(
+            [
+                get_upload_directory() / path.name,
+                PROJECT_ROOT / "uploads" / path.name,
+                BACKEND_ROOT / "uploads" / path.name,
+            ]
+        )
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    return candidates[0]
+
+
 async def store_upload(file: UploadFile) -> StoredFile:
     original_filename = Path(file.filename or "").name
     extension = Path(original_filename).suffix.lower()
@@ -63,7 +100,7 @@ async def store_upload(file: UploadFile) -> StoredFile:
             detail=f"Invalid content type for {extension} upload.",
         )
 
-    upload_directory = Path(settings.upload_directory)
+    upload_directory = get_upload_directory()
     upload_directory.mkdir(parents=True, exist_ok=True)
 
     stored_filename = f"{uuid4().hex}{extension}"
@@ -92,11 +129,16 @@ async def store_upload(file: UploadFile) -> StoredFile:
             detail="Uploaded file is empty.",
         )
 
+    try:
+        stored_path_value = str(storage_path.relative_to(BACKEND_ROOT))
+    except ValueError:
+        stored_path_value = str(storage_path)
+
     return StoredFile(
         original_filename=original_filename,
         stored_filename=stored_filename,
         file_extension=extension,
         content_type=content_type,
         size_bytes=size_bytes,
-        storage_path=str(storage_path),
+        storage_path=stored_path_value,
     )

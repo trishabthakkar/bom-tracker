@@ -164,6 +164,13 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 - Added graph API client for build, stats, affected parents, and affected children.
 - Added frontend loading, empty, error, retry, and selection states around persisted workflows.
 
+### Post-Phase 12 Debug Fixes
+
+- Fixed stored upload path resolution so records saved as `uploads/{file}` can still resolve files stored under `backend/uploads/{file}`.
+- Standardized new local uploads to save under `backend/uploads` when `UPLOAD_DIRECTORY=uploads`.
+- Added parser-level missing-file handling so graph, BOM, ECO, and report workflows return useful API errors instead of unhandled `FileNotFoundError` exceptions.
+- Added unit coverage for upload directory and legacy relative path resolution.
+
 ## Backend Endpoints
 
 Public:

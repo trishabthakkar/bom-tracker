@@ -5,6 +5,8 @@ from typing import Any
 
 from openpyxl import load_workbook
 
+from app.services.file_storage import resolve_storage_path
+
 REQUIRED_FIELDS = {"part_number"}
 SUPPORTED_EXTENSIONS = {".csv", ".xlsx"}
 
@@ -76,11 +78,14 @@ class BomParseResult:
 
 
 def parse_bom_file(path: str | Path) -> BomParseResult:
-    file_path = Path(path)
+    file_path = resolve_storage_path(path)
     extension = file_path.suffix.lower()
 
     if extension not in SUPPORTED_EXTENSIONS:
         raise BomParserError("Only CSV and XLSX BOM files can be parsed.")
+
+    if not file_path.exists():
+        raise BomParserError("Uploaded BOM file is no longer available. Re-upload the file and try again.")
 
     raw_rows = _read_csv(file_path) if extension == ".csv" else _read_xlsx(file_path)
     return _parse_rows(raw_rows)
