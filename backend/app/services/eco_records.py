@@ -1,3 +1,5 @@
+from datetime import date, datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -102,6 +104,69 @@ def get_eco_record(*, db: Session, record_id: int, user_id: int) -> EcoRecord | 
     return record
 
 
+def update_eco_record(
+    *,
+    db: Session,
+    record: EcoRecord,
+    change_type: str | None,
+    old_part: str | None,
+    new_part: str | None,
+    reason: str | None,
+    effective_date: date | None,
+    correction_notes: str | None,
+) -> EcoRecord:
+    record.change_type = _clean_optional(change_type)
+    record.old_part = _clean_part(old_part)
+    record.new_part = _clean_part(new_part)
+    record.reason = _clean_optional(reason)
+    record.effective_date = effective_date
+    record.correction_notes = _clean_optional(correction_notes)
+    record.workflow_status = "reviewed"
+    record.reviewed_at = datetime.utcnow()
+    record.approved_at = None
+    record.rejected_at = None
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def mark_eco_reviewed(*, db: Session, record: EcoRecord, notes: str | None = None) -> EcoRecord:
+    record.workflow_status = "reviewed"
+    record.correction_notes = _clean_optional(notes) or record.correction_notes
+    record.reviewed_at = datetime.utcnow()
+    record.approved_at = None
+    record.rejected_at = None
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def approve_eco_record(*, db: Session, record: EcoRecord, notes: str | None = None) -> EcoRecord:
+    record.workflow_status = "approved"
+    record.approval_notes = _clean_optional(notes)
+    record.reviewed_at = record.reviewed_at or datetime.utcnow()
+    record.approved_at = datetime.utcnow()
+    record.rejected_at = None
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def reject_eco_record(*, db: Session, record: EcoRecord, notes: str | None = None) -> EcoRecord:
+    record.workflow_status = "rejected"
+    record.approval_notes = _clean_optional(notes)
+    record.reviewed_at = record.reviewed_at or datetime.utcnow()
+    record.rejected_at = datetime.utcnow()
+    record.approved_at = None
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
 def eco_record_to_parsed_change(record: EcoRecord) -> ParsedEngineeringChange:
     return ParsedEngineeringChange(
         change_type=record.change_type,
@@ -112,3 +177,13 @@ def eco_record_to_parsed_change(record: EcoRecord) -> ParsedEngineeringChange:
         source=record.parser_source,
         confidence=record.confidence,
     )
+
+
+def _clean_optional(value: str | None) -> str | None:
+    cleaned = value.strip() if value else None
+    return cleaned or None
+
+
+def _clean_part(value: str | None) -> str | None:
+    cleaned = _clean_optional(value)
+    return cleaned.upper() if cleaned else None

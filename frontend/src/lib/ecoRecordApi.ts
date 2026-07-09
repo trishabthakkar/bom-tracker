@@ -13,6 +13,12 @@ export type EcoRecord = {
   effective_date: string | null;
   parser_source: string;
   confidence: number;
+  workflow_status: string;
+  correction_notes: string | null;
+  approval_notes: string | null;
+  reviewed_at: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
   created_at: string;
 };
 
@@ -72,4 +78,68 @@ export async function getEcoRecords(): Promise<EcoRecord[]> {
 
   const payload = (await response.json()) as { records: EcoRecord[] };
   return payload.records;
+}
+
+export async function getEcoRecord(recordId: number): Promise<EcoRecordDetail> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/eco-records/${recordId}`, {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiErrorMessage(response, "Unable to load ECO record."));
+  }
+
+  return response.json() as Promise<EcoRecordDetail>;
+}
+
+export type EcoRecordUpdate = {
+  change_type: string | null;
+  old_part: string | null;
+  new_part: string | null;
+  reason: string | null;
+  effective_date: string | null;
+  correction_notes: string | null;
+};
+
+export async function updateEcoRecord(
+  recordId: number,
+  payload: EcoRecordUpdate,
+): Promise<EcoRecordDetail> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/eco-records/${recordId}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...csrfHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiErrorMessage(response, "Unable to update ECO record."));
+  }
+
+  return response.json() as Promise<EcoRecordDetail>;
+}
+
+export async function transitionEcoRecord(
+  recordId: number,
+  action: "review" | "approve" | "reject",
+  notes: string | null = null,
+): Promise<EcoRecordDetail> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/eco-records/${recordId}/${action}`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...csrfHeader(),
+    },
+    body: JSON.stringify({ notes }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiErrorMessage(response, `Unable to ${action} ECO record.`));
+  }
+
+  return response.json() as Promise<EcoRecordDetail>;
 }

@@ -39,7 +39,7 @@ Key frontend decisions:
 - `AuthProvider` recovers session state from `/me`.
 - JWTs are not stored in JavaScript; auth relies on the backend HttpOnly cookie.
 - Uploads use `XMLHttpRequest` because browser `fetch` does not expose upload progress events.
-- Domain-specific API clients live in `lib/` and cover auth, uploads, jobs, BOM imports, ECO records, graph analysis, documents, and reports.
+- Domain-specific API clients live in `lib/` and cover auth, uploads, jobs, BOM imports, BOM diffs, ECO records, graph analysis, documents, and reports.
 - Dashboard and workflow pages load authenticated backend data directly instead of relying on static placeholders.
 
 ## Backend Architecture
@@ -126,12 +126,24 @@ This is intentionally compatible with the existing synchronous endpoints. A futu
 1. User uploads a BOM.
 2. Frontend calls `/api/v1/jobs/bom-imports/from-upload/{upload_id}`.
 3. A background job calls `services/bom_importer.py`.
-4. The service parses the uploaded file and persists:
+4. The service infers simple version metadata for active same-name imports.
+5. The service parses the uploaded file and persists:
    - BOM import batch
    - normalized BOM part rows
    - assembly relationships
    - dependency graph snapshot
-5. Frontend polls job status, then refreshes import status and parsed row preview.
+6. Frontend polls job status, then refreshes import status and parsed row preview.
+
+## BOM Diff Flow
+
+1. User opens the BOM Compare page.
+2. Frontend loads active normalized BOM imports through `/api/v1/bom-imports`.
+3. User selects a base import and target import.
+4. Frontend calls `/api/v1/bom-imports/diff`.
+5. `services/bom_diff.py` compares persisted `bom_parts` by part number.
+6. The response identifies added parts, removed parts, revised parts, unchanged count, and possible replacement candidates.
+
+Replacement candidates are deterministic hints based on assembly context and description overlap. They are not persisted as approved changes.
 
 ## Dependency Graph Flow
 
@@ -164,6 +176,21 @@ This is intentionally compatible with the existing synchronous endpoints. A futu
 3. Background worker extracts PDF text and parses the change using `EngineeringChangeParser`.
 4. `/api/v1/eco-records/*` workflows persist parsed fields.
 5. Frontend shows saved ECO records for later workflows.
+
+## ECO Review Flow
+
+1. User selects a saved ECO record from the Upload ECO page.
+2. Frontend calls `/api/v1/eco-records/{record_id}` for detail.
+3. User edits parser output fields when needed.
+4. Frontend sends corrections through `PATCH /api/v1/eco-records/{record_id}`.
+5. Backend stores corrected fields, correction notes, and marks the record `reviewed`.
+6. User can call:
+   - `/api/v1/eco-records/{record_id}/review`
+   - `/api/v1/eco-records/{record_id}/approve`
+   - `/api/v1/eco-records/{record_id}/reject`
+7. Backend persists workflow status, notes, and timestamps.
+
+This is a lightweight single-user review trail. A later phase can add assigned approvers, team permissions, and report generation from approved ECO records.
 
 ## Document Intelligence Flow
 

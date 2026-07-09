@@ -93,7 +93,9 @@ export function UploadBomPage() {
           <div className="grid gap-3 text-sm sm:grid-cols-3">
             <div>
               <p className="text-muted-foreground">Import</p>
-              <p className="font-medium">#{latestImport.id}</p>
+              <p className="font-medium">
+                #{latestImport.id} {latestImport.version_label ?? ""}
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground">Rows</p>
@@ -155,7 +157,8 @@ export function UploadBomPage() {
                 <div>
                   <p className="font-medium">{bomImport.filename}</p>
                   <p className="text-sm text-muted-foreground">
-                    Import #{bomImport.id} • {bomImport.row_count} rows •{" "}
+                    Import #{bomImport.id} {bomImport.version_label ? `• ${bomImport.version_label}` : ""} •{" "}
+                    {bomImport.row_count} rows •{" "}
                     {new Date(bomImport.created_at).toLocaleString()}
                   </p>
                 </div>

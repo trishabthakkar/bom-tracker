@@ -7,11 +7,14 @@ from app.models.upload import UploadedFile
 from app.models.user import User
 from app.schemas.bom_import import (
     AssemblyRelationshipRead,
+    BomDiffRequest,
+    BomDiffResponse,
     BomImportDetail,
     BomImportListResponse,
     BomImportRead,
     BomPartRead,
 )
+from app.services.bom_diff import BomDiffError, compare_bom_imports
 from app.services.bom_importer import (
     BomImportError,
     archive_bom_import,
@@ -61,6 +64,26 @@ def read_bom_imports(
             for bom_import in list_bom_imports(db=db, user_id=current_user.id)
         ]
     )
+
+
+@router.post("/diff", response_model=BomDiffResponse)
+def diff_bom_imports(
+    payload: BomDiffRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> BomDiffResponse:
+    try:
+        return compare_bom_imports(
+            db=db,
+            user_id=current_user.id,
+            base_import_id=payload.base_import_id,
+            target_import_id=payload.target_import_id,
+        )
+    except BomDiffError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(error),
+        ) from error
 
 
 @router.get("/{import_id}", response_model=BomImportDetail)

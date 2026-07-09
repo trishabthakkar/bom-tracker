@@ -3,6 +3,7 @@ import {
   Clock3,
   Files,
   FileText,
+  GitCompare,
   GitBranch,
   LayoutDashboard,
   Settings,
@@ -19,6 +20,7 @@ export type NavItem = {
 export const navItems: NavItem[] = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
   { label: "Upload BOM", path: "/upload-bom", icon: Upload },
+  { label: "BOM Compare", path: "/bom-compare", icon: GitCompare },
   { label: "Upload ECO", path: "/upload-eco", icon: FileText },
   { label: "Documents", path: "/documents", icon: Files },
   { label: "Reports", path: "/reports", icon: BarChart3 },

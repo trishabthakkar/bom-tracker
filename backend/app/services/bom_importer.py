@@ -32,10 +32,17 @@ def import_bom_upload(
     except BomParserError as error:
         raise BomImportError(str(error)) from error
 
+    version_label, previous_import_id = _infer_next_version_metadata(
+        db=db,
+        filename=upload.original_filename,
+        user_id=user_id,
+    )
     bom_import = BomImport(
         user_id=user_id,
         upload_id=upload.id,
         filename=upload.original_filename,
+        version_label=version_label,
+        previous_import_id=previous_import_id,
         row_count=len(parsed.rows),
         status="imported",
     )
@@ -190,3 +197,22 @@ def _build_relationship_records(
             )
 
     return list(relationships.values())
+
+
+def _infer_next_version_metadata(
+    *,
+    db: Session,
+    filename: str,
+    user_id: int,
+) -> tuple[str, int | None]:
+    imports = list(
+        db.scalars(
+            select(BomImport)
+            .where(BomImport.user_id == user_id)
+            .where(BomImport.filename == filename)
+            .where(BomImport.archived_at.is_(None))
+            .order_by(BomImport.created_at.desc())
+        )
+    )
+    previous = imports[0] if imports else None
+    return f"v{len(imports) + 1}", previous.id if previous else None

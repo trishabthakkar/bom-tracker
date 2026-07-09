@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base_class import Base
@@ -17,6 +17,9 @@ class BomImport(Base):
         nullable=False,
     )
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    version_label: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    previous_import_id: Mapped[int | None] = mapped_column(ForeignKey("bom_imports.id"), nullable=True)
+    import_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     row_count: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(40), default="imported", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)

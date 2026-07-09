@@ -17,6 +17,8 @@ Current MVP capabilities:
 - Deterministic saved impact report generation.
 - PDF engineering document indexing for manuals and downstream records.
 - Affected document section matching inside saved impact reports.
+- BOM version comparison for added, removed, revised, and likely replaced parts.
+- ECO correction, review, approval, and rejection workflow states.
 - Engineering dashboard with real upload, report, import, and ECO activity data.
 - Frontend report generation, ECO upload parsing, and dependency graph exploration.
 
@@ -159,6 +161,7 @@ Sidebar pages:
 
 - Dashboard
 - Upload BOM
+- BOM Compare
 - Upload ECO
 - Reports
 - Dependency Graph
@@ -286,6 +289,56 @@ When the job completes, it persists:
 - normalized BOM part rows
 - assembly relationships
 - dependency graph snapshot
+- version metadata for same-name active imports
+
+Each import receives a simple `vN` version label for the same filename. For example, the first active import of `demo-bom.csv` is `v1`, and the next active import of that same filename is `v2`.
+
+## BOM Compare
+
+### How To Use It
+
+Open:
+
+```text
+/bom-compare
+```
+
+Steps:
+
+1. Upload and import at least two BOM files.
+2. Select the older or baseline import as `Base import`.
+3. Select the newer import as `Target import`.
+4. Click `Compare`.
+5. Review added parts, removed parts, revised parts, unchanged count, and possible replacements.
+
+### How It Works
+
+The frontend calls:
+
+```text
+POST /api/v1/bom-imports/diff
+```
+
+Request body:
+
+```json
+{
+  "base_import_id": 1,
+  "target_import_id": 2
+}
+```
+
+The backend compares normalized persisted BOM rows by `part_number`.
+
+It detects:
+
+- added parts: present in target, missing from base
+- removed parts: present in base, missing from target
+- revised parts: same part number but changed revision, description, parent, or child assembly
+- possible replacements: removed and added parts that share assembly context or similar descriptions
+- unchanged parts: common parts with no tracked field changes
+
+Replacement candidates are deterministic hints. They should be reviewed by a person before being treated as approved engineering changes.
 
 ## Upload ECO
 
@@ -309,6 +362,7 @@ Steps:
 4. The frontend queues a background ECO PDF parsing job.
 5. Watch the job status panel until parsing completes or fails.
 6. Review the saved ECO record list below the upload area.
+7. Click `Review` on a saved record to correct fields and approve or reject it.
 
 ### How It Works
 
@@ -327,6 +381,37 @@ POST /api/v1/jobs/eco-records/parse-upload/{upload_id}
 That queues a background job. The job extracts text from the PDF, parses structured ECO fields, and persists the ECO record.
 
 The page also includes a plain-text ECO parser. Paste or edit ECO text and click `Save parsed ECO` to persist extracted fields.
+
+### ECO Review Workflow
+
+Each saved ECO record has a workflow status:
+
+- `draft`
+- `reviewed`
+- `approved`
+- `rejected`
+
+Click `Review` on a saved ECO record to open the correction panel.
+
+You can edit:
+
+- change type
+- old part
+- new part
+- reason
+- effective date
+- correction notes
+
+Click `Save corrections` to persist changes. This marks the ECO as `reviewed`.
+
+You can also:
+
+- click `Mark reviewed`
+- enter approval notes
+- click `Approve`
+- click `Reject`
+
+Approval and rejection decisions store timestamps and notes. This creates a lightweight review trail for parsed ECOs before they are used in downstream analysis.
 
 ## Engineering Documents
 
@@ -930,10 +1015,12 @@ Both are allowed by backend CORS config.
 
 - Dependency graph data is shown through metrics, lookup lists, and edge tables, not a full interactive graph canvas yet.
 - Document intelligence uses PDF text extraction and part-number matching, not semantic LLM review.
-- No PDF export, report sharing, approval workflow, or team permissions yet.
+- Report generation still accepts raw ECO text directly; a later phase should generate reports from selected approved ECO records.
+- BOM replacement candidates are heuristic suggestions, not approved engineering decisions.
+- No PDF export, report sharing, report approval workflow, or team permissions yet.
 - Background jobs use FastAPI in-process workers for MVP; a production queue such as Celery, RQ, or Arq is not connected yet.
 - Password reset, email verification, server-side token revocation, RBAC, and virus scanning are not implemented yet.
 
 ## Recommended Next Phases
 
-Phase 17 should add advanced BOM and ECO workflows: BOM versioning, BOM diffs, ECO approval states, parser correction screens, confidence warnings, and user approval/rejection of suggested updates.
+Phase 18 should add reporting, export, and collaboration: PDF/CSV export, report sharing, comments, review workflow, report versioning, sign-off statuses, and ownership.

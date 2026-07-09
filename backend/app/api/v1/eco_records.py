@@ -9,15 +9,21 @@ from app.schemas.eco_record import (
     EcoRecordDetail,
     EcoRecordListResponse,
     EcoRecordRead,
+    EcoRecordUpdateRequest,
+    EcoRecordWorkflowRequest,
     SavedEcoTextParseRequest,
 )
 from app.services.eco_records import (
     EcoRecordError,
+    approve_eco_record,
     eco_record_to_parsed_change,
     get_eco_record,
     list_eco_records,
+    mark_eco_reviewed,
     parse_text_and_create_eco_record,
     parse_upload_and_create_eco_record,
+    reject_eco_record,
+    update_eco_record,
 )
 
 router = APIRouter(prefix="/eco-records", tags=["eco-records"])
@@ -94,6 +100,73 @@ def read_eco_record(
         )
 
     return _record_detail(record)
+
+
+@router.patch("/{record_id}", response_model=EcoRecordDetail)
+def update_parsed_eco_record(
+    record_id: int,
+    payload: EcoRecordUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> EcoRecordDetail:
+    record = _get_owned_record(db=db, record_id=record_id, user_id=current_user.id)
+    return _record_detail(
+        update_eco_record(
+            db=db,
+            record=record,
+            change_type=payload.change_type,
+            old_part=payload.old_part,
+            new_part=payload.new_part,
+            reason=payload.reason,
+            effective_date=payload.effective_date,
+            correction_notes=payload.correction_notes,
+        )
+    )
+
+
+@router.post("/{record_id}/review", response_model=EcoRecordDetail)
+def mark_record_reviewed(
+    record_id: int,
+    payload: EcoRecordWorkflowRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> EcoRecordDetail:
+    record = _get_owned_record(db=db, record_id=record_id, user_id=current_user.id)
+    return _record_detail(mark_eco_reviewed(db=db, record=record, notes=payload.notes))
+
+
+@router.post("/{record_id}/approve", response_model=EcoRecordDetail)
+def approve_record(
+    record_id: int,
+    payload: EcoRecordWorkflowRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> EcoRecordDetail:
+    record = _get_owned_record(db=db, record_id=record_id, user_id=current_user.id)
+    return _record_detail(approve_eco_record(db=db, record=record, notes=payload.notes))
+
+
+@router.post("/{record_id}/reject", response_model=EcoRecordDetail)
+def reject_record(
+    record_id: int,
+    payload: EcoRecordWorkflowRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> EcoRecordDetail:
+    record = _get_owned_record(db=db, record_id=record_id, user_id=current_user.id)
+    return _record_detail(reject_eco_record(db=db, record=record, notes=payload.notes))
+
+
+def _get_owned_record(*, db: Session, record_id: int, user_id: int):
+    record = get_eco_record(db=db, record_id=record_id, user_id=user_id)
+
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ECO record was not found.",
+        )
+
+    return record
 
 
 def _record_detail(record) -> EcoRecordDetail:

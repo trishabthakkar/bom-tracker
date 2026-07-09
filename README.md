@@ -2,7 +2,7 @@
 
 A modern full-stack MVP for analyzing engineering changes and downstream BOM impact.
 
-The application currently supports authentication, secure uploads, BOM parsing, persisted BOM imports, dependency graph analysis, persisted ECO records, optional AI-backed ECO parsing, indexed engineering documents, saved impact reports, and frontend workflows connected to real backend data.
+The application currently supports authentication, secure uploads, BOM parsing, persisted BOM imports, BOM comparison, dependency graph analysis, persisted ECO records, ECO review states, optional AI-backed ECO parsing, indexed engineering documents, saved impact reports, and frontend workflows connected to real backend data.
 
 ## Repository Structure
 
@@ -318,15 +318,37 @@ Endpoints:
 POST /api/v1/bom-imports/from-upload/{upload_id}
 GET  /api/v1/bom-imports
 GET  /api/v1/bom-imports/{import_id}
+POST /api/v1/bom-imports/diff
 POST /api/v1/eco-records/parse-text
 POST /api/v1/eco-records/parse-upload/{upload_id}
 GET  /api/v1/eco-records
+GET  /api/v1/eco-records/{record_id}
+PATCH /api/v1/eco-records/{record_id}
+POST /api/v1/eco-records/{record_id}/review
+POST /api/v1/eco-records/{record_id}/approve
+POST /api/v1/eco-records/{record_id}/reject
 POST /api/v1/reports/impact-report
 GET  /api/v1/reports
 GET  /api/v1/reports/{report_id}
 ```
 
-The frontend now shows live dashboard metrics, normalized BOM import status, saved ECO records, saved report history, report detail pages, report generation from a BOM import selector, automatic ECO PDF parsing after upload, and a dependency graph explorer.
+The frontend now shows live dashboard metrics, normalized BOM import status, BOM comparison, saved ECO records, ECO correction/review/approval controls, saved report history, report detail pages, report generation from a BOM import selector, automatic ECO PDF parsing after upload, and a dependency graph explorer.
+
+## BOM Compare and ECO Review
+
+Phase 17 adds advanced workflow support:
+
+- same-filename BOM imports receive simple `vN` labels
+- the BOM Compare page detects added, removed, revised, unchanged, and likely replaced parts
+- ECO records can be corrected after parsing
+- ECO records can be marked reviewed, approved, or rejected
+- correction notes, approval notes, and decision timestamps are persisted
+
+Run migrations before using these features:
+
+```bash
+npm run db:migrate
+```
 
 ## Downstream Documents
 

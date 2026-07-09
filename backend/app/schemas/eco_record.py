@@ -20,6 +20,12 @@ class EcoRecordRead(BaseModel):
     effective_date: date | None = None
     parser_source: str
     confidence: float
+    workflow_status: str
+    correction_notes: str | None = None
+    approval_notes: str | None = None
+    reviewed_at: datetime | None = None
+    approved_at: datetime | None = None
+    rejected_at: datetime | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -32,3 +38,16 @@ class EcoRecordDetail(EcoRecordRead):
 
 class EcoRecordListResponse(BaseModel):
     records: list[EcoRecordRead] = Field(default_factory=list)
+
+
+class EcoRecordUpdateRequest(BaseModel):
+    change_type: str | None = Field(default=None, max_length=80)
+    old_part: str | None = Field(default=None, max_length=120)
+    new_part: str | None = Field(default=None, max_length=120)
+    reason: str | None = Field(default=None, max_length=10_000)
+    effective_date: date | None = None
+    correction_notes: str | None = Field(default=None, max_length=5_000)
+
+
+class EcoRecordWorkflowRequest(BaseModel):
+    notes: str | None = Field(default=None, max_length=5_000)

@@ -222,6 +222,28 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 - Increased report risk scoring when affected downstream document sections are found.
 - Added parser, report persistence, and document endpoint regression tests.
 
+### Phase 17 - Advanced BOM and ECO Workflows
+
+- Added BOM import version metadata:
+  - `version_label`
+  - `previous_import_id`
+  - `import_notes`
+- Added automatic `vN` labels for active BOM imports with the same filename.
+- Added BOM-to-BOM diff service and protected `POST /api/v1/bom-imports/diff` endpoint.
+- BOM diffs detect added parts, removed parts, revised common parts, unchanged parts, and likely replacement candidates.
+- Added frontend BOM Compare page for selecting two normalized BOM imports and inspecting diff results.
+- Added ECO workflow fields:
+  - `workflow_status`
+  - `correction_notes`
+  - `approval_notes`
+  - `reviewed_at`
+  - `approved_at`
+  - `rejected_at`
+- Added ECO correction and review endpoints for updating parsed fields, marking reviewed, approving, and rejecting.
+- Added ECO review controls to the Upload ECO page.
+- Added Alembic migration `20260709_0006_advanced_bom_eco_workflows.py`.
+- Added backend unit coverage for BOM diff behavior and ECO workflow transitions.
+
 ## Backend Endpoints
 
 Public:
@@ -247,12 +269,17 @@ Protected:
 - `POST /api/v1/intelligence/impact-report`
 - `POST /api/v1/bom-imports/from-upload/{upload_id}`
 - `GET /api/v1/bom-imports`
+- `POST /api/v1/bom-imports/diff`
 - `GET /api/v1/bom-imports/{import_id}`
 - `DELETE /api/v1/bom-imports/{import_id}`
 - `POST /api/v1/eco-records/parse-text`
 - `POST /api/v1/eco-records/parse-upload/{upload_id}`
 - `GET /api/v1/eco-records`
 - `GET /api/v1/eco-records/{record_id}`
+- `PATCH /api/v1/eco-records/{record_id}`
+- `POST /api/v1/eco-records/{record_id}/review`
+- `POST /api/v1/eco-records/{record_id}/approve`
+- `POST /api/v1/eco-records/{record_id}/reject`
 - `POST /api/v1/reports/impact-report`
 - `GET /api/v1/reports`
 - `GET /api/v1/reports/{report_id}`
@@ -366,6 +393,21 @@ Persistence behavior:
 - Graphs can be rebuilt on demand.
 - Graph snapshots are persisted when a BOM import is created.
 
+## BOM Versioning and Diffing
+
+Current behavior:
+
+- Each normalized BOM import gets a simple version label such as `v1`, `v2`, or `v3` for the same active filename.
+- Imports can be compared through the BOM Compare page or `/api/v1/bom-imports/diff`.
+- Diff output includes:
+  - added parts
+  - removed parts
+  - revised parts
+  - possible replacement candidates
+  - unchanged count
+
+Replacement candidates are deterministic hints based on shared parent assembly, shared child assembly, and description overlap. They are not yet human-approved engineering decisions.
+
 ## Engineering Change Parser
 
 Supported inputs:
@@ -393,6 +435,27 @@ Current behavior:
 - Uploaded PDFs are loaded by upload id and must belong to the authenticated user.
 - PDF parsing extracts text only before structured ECO parsing.
 - Impact reports are not generated in this phase.
+
+## ECO Review Workflow
+
+Current workflow statuses:
+
+- `draft`
+- `reviewed`
+- `approved`
+- `rejected`
+
+Current behavior:
+
+- Parsed ECO fields can be manually corrected after parsing.
+- Saving corrections marks the ECO as `reviewed`.
+- Users can mark reviewed, approve, or reject ECO records.
+- Approval and rejection notes are persisted.
+- Review, approval, and rejection timestamps are persisted.
+
+Current limitation:
+
+- Report generation can still use raw ECO text directly. A future phase should let users generate reports directly from approved ECO records.
 
 ## Intelligence Layer
 
@@ -484,24 +547,6 @@ Current limitation:
 
 ## Remaining Implementation Roadmap
 
-### Phase 17 - Advanced BOM and ECO Workflows
-
-Goal: support realistic engineering operations beyond single-file analysis.
-
-Tasks:
-
-- Add BOM versioning.
-- Add BOM-to-BOM diffing.
-- Detect added, removed, replaced, and revised parts between BOM versions.
-- Add ECO versioning and approval states.
-- Add manual correction workflow for parsed ECO fields.
-- Add field-level confidence and validation warnings.
-- Add user approval/rejection of suggested updates.
-
-Definition of done:
-
-- Users can manage iterative engineering change workflows, not only one-off analysis.
-
 ### Phase 18 - Reporting, Export, and Collaboration
 
 Goal: make impact reports usable by real teams.
@@ -559,4 +604,4 @@ Definition of done:
 
 ## Recommended Next Phase
 
-Proceed with Phase 17: Advanced BOM and ECO Workflows.
+Proceed with Phase 18: Reporting, Export, and Collaboration.

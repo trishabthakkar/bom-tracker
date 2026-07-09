@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { App } from "@/App";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { PublicRoute } from "@/auth/PublicRoute";
+import { BomComparePage } from "@/pages/BomComparePage";
 import { DependencyGraphPage } from "@/pages/DependencyGraphPage";
 import { DocumentsPage } from "@/pages/DocumentsPage";
 import { HistoryPage } from "@/pages/HistoryPage";
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <HomePage /> },
           { path: "upload-bom", element: <UploadBomPage /> },
+          { path: "bom-compare", element: <BomComparePage /> },
           { path: "upload-eco", element: <UploadEcoPage /> },
           { path: "documents", element: <DocumentsPage /> },
           { path: "reports", element: <ReportsPage /> },
