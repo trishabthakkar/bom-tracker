@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/lib/apiBase";
 import { getApiErrorMessage } from "@/lib/apiErrors";
+import { csrfHeader } from "@/lib/csrf";
 
 export type JobStatus = "queued" | "processing" | "completed" | "failed";
 
@@ -44,6 +45,7 @@ export async function startImpactReportJob({
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...csrfHeader(),
     },
     body: JSON.stringify({
       bom_upload_id: bomUploadId,
@@ -91,6 +93,7 @@ async function startJob(path: string, fallback: string): Promise<Job> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     credentials: "include",
+    headers: csrfHeader(),
   });
 
   if (!response.ok) {

@@ -154,6 +154,10 @@ Security defaults:
 - JWTs are stored in an HttpOnly cookie named `access_token`.
 - Cookies use `SameSite=Lax`; `Secure` is enabled automatically outside local development.
 - JavaScript does not read or store JWTs.
+- Cookie-authenticated mutation requests use CSRF cookie/header validation.
+- Auth and mutation endpoints have in-memory MVP rate limits.
+- Security headers are added to API responses.
+- Auth, upload, and background job creation events are audit logged.
 - `JWT_SECRET_KEY` must be changed for production.
 - `/me` is protected by JWT middleware plus a current-user dependency.
 

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from secrets import token_urlsafe
 
 import bcrypt
 import jwt
@@ -25,3 +26,7 @@ def decode_access_token(token: str) -> dict[str, object] | None:
         return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
     except jwt.PyJWTError:
         return None
+
+
+def create_csrf_token() -> str:
+    return token_urlsafe(32)

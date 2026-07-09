@@ -8,7 +8,10 @@ from app.core.config import settings
 from app.core.errors import APIError, api_error_handler, database_error_handler
 from app.core.logging import configure_logging
 from app.middleware.auth import JWTAuthenticationMiddleware
+from app.middleware.csrf import CSRFMiddleware
+from app.middleware.rate_limit import InMemoryRateLimitMiddleware
 from app.middleware.request_logging import RequestLoggingMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
 
 
 def create_app() -> FastAPI:
@@ -24,6 +27,8 @@ def create_app() -> FastAPI:
     app.add_exception_handler(SQLAlchemyError, database_error_handler)
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(JWTAuthenticationMiddleware)
+    app.add_middleware(CSRFMiddleware)
+    app.add_middleware(InMemoryRateLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -31,6 +36,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(SecurityHeadersMiddleware)
 
     app.include_router(auth_router)
     app.include_router(api_router, prefix="/api/v1")

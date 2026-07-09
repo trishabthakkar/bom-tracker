@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     upload_directory: str = "uploads"
     max_upload_size_mb: int = 25
     llm_provider: str = "rule_based"
+    auth_rate_limit_per_minute: int = 10
+    mutation_rate_limit_per_minute: int = 120
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

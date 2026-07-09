@@ -85,9 +85,19 @@ This is intentionally compatible with the existing synchronous endpoints. A futu
 1. User registers or logs in.
 2. Backend hashes passwords with bcrypt.
 3. Backend sets a JWT in an HttpOnly cookie named `access_token`.
-4. Frontend calls `/me` on load to recover session state.
-5. Protected routes redirect unauthenticated users to `/login`.
-6. Backend middleware rejects protected API calls without a valid token.
+4. Backend sets a non-HttpOnly `csrf_token` cookie for same-site mutation protection.
+5. Frontend calls `/me` on load to recover session state.
+6. Protected routes redirect unauthenticated users to `/login`.
+7. Backend middleware rejects protected API calls without a valid token.
+8. Cookie-authenticated mutation requests require the `X-CSRF-Token` header to match the CSRF cookie.
+
+## Security Middleware
+
+- `JWTAuthenticationMiddleware` validates auth cookies or bearer tokens.
+- `CSRFMiddleware` protects cookie-authenticated mutations.
+- `InMemoryRateLimitMiddleware` rate limits login/register and authenticated mutations for MVP local deployments.
+- `SecurityHeadersMiddleware` adds browser security headers.
+- Audit logs record auth events, uploads, and background job creation.
 
 ## Upload Flow
 

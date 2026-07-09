@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.audit import audit_event
 from app.db.session import get_db
 from app.models.upload import UploadedFile
 from app.models.user import User
@@ -45,6 +46,7 @@ def create_bom_import_job(
         status_message="BOM import queued.",
     )
     background_tasks.add_task(run_bom_import_job, job.id)
+    audit_event(event="job.created", user_id=current_user.id, job_id=job.id, job_type=job.job_type)
     return JobRead.model_validate(job)
 
 
@@ -70,6 +72,7 @@ def create_eco_upload_parse_job(
         status_message="ECO PDF parsing queued.",
     )
     background_tasks.add_task(run_eco_upload_parse_job, job.id)
+    audit_event(event="job.created", user_id=current_user.id, job_id=job.id, job_type=job.job_type)
     return JobRead.model_validate(job)
 
 
@@ -95,6 +98,7 @@ def create_graph_build_job(
         status_message="Graph build queued.",
     )
     background_tasks.add_task(run_graph_build_job, job.id)
+    audit_event(event="job.created", user_id=current_user.id, job_id=job.id, job_type=job.job_type)
     return JobRead.model_validate(job)
 
 
@@ -123,6 +127,7 @@ def create_impact_report_job(
         status_message="Impact report generation queued.",
     )
     background_tasks.add_task(run_impact_report_job, job.id)
+    audit_event(event="job.created", user_id=current_user.id, job_id=job.id, job_type=job.job_type)
     return JobRead.model_validate(job)
 
 

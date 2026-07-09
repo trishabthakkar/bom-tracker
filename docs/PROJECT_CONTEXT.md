@@ -185,6 +185,16 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 - Kept existing synchronous APIs available for compatibility and direct testing.
 - Added backend unit coverage for job persistence and upload replacement behavior.
 
+### Phase 14 - Security Hardening Baseline
+
+- Added CSRF protection for cookie-authenticated mutation endpoints.
+- Added `csrf_token` cookie and required `X-CSRF-Token` frontend header for protected mutations.
+- Added in-memory rate limiting for login/register and authenticated mutation endpoints.
+- Added security headers: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy`.
+- Added audit logging helper and audit events for register, login, logout, uploads, and background job creation.
+- Added configurable rate-limit environment variables.
+- Added backend unit coverage for CSRF policy, rate limiting, and security headers.
+
 ## Backend Endpoints
 
 Public:
@@ -408,32 +418,14 @@ Persistence behavior:
 - External AI/LLM provider integration.
 - Visual frontend dependency graph rendering.
 - Durable external worker queue such as Celery/RQ/Arq.
+- Password reset and email verification flows.
 - Server-side token revocation.
+- Role-based access control.
 - Virus scanning.
+- Advanced MIME/content sniffing.
 - Object storage such as S3.
 
 ## Remaining Implementation Roadmap
-
-### Phase 14 - Security Hardening
-
-Goal: strengthen production security posture.
-
-Tasks:
-
-- Add CSRF protection for cookie-authenticated mutation endpoints.
-- Add rate limiting for auth and upload endpoints.
-- Add password reset flow.
-- Add email verification.
-- Add server-side logout/token revocation strategy.
-- Add role-based access control.
-- Add audit logging for login, logout, uploads, parsing, graph generation, and report generation.
-- Add virus scanning for uploaded files.
-- Improve MIME/content sniffing beyond extension/content-type checks.
-- Add secure object storage option such as S3, Azure Blob, or GCS.
-
-Definition of done:
-
-- The app has a documented security model and mitigates common auth/upload risks.
 
 ### Phase 15 - AI Provider Integration
 
@@ -545,4 +537,4 @@ Definition of done:
 
 ## Recommended Next Phase
 
-Proceed with Phase 14: Security Hardening.
+Proceed with Phase 15: AI Provider Integration.

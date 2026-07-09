@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/lib/apiBase";
 import { getApiErrorMessage } from "@/lib/apiErrors";
+import { csrfHeader } from "@/lib/csrf";
 
 export type BomPart = {
   id: number;
@@ -37,6 +38,7 @@ export async function importBomUpload(uploadId: number): Promise<BomImportDetail
   const response = await fetch(`${API_BASE_URL}/api/v1/bom-imports/from-upload/${uploadId}`, {
     method: "POST",
     credentials: "include",
+    headers: csrfHeader(),
   });
 
   if (!response.ok) {

@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/lib/apiBase";
 import { getApiErrorMessage } from "@/lib/apiErrors";
+import { csrfHeader } from "@/lib/csrf";
 
 export type SavedImpactReport = {
   id: number;
@@ -93,6 +94,7 @@ export async function createImpactReport({
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...csrfHeader(),
     },
     body: JSON.stringify({
       bom_upload_id: bomUploadId,

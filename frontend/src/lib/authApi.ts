@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/lib/apiBase";
+import { csrfHeader } from "@/lib/csrf";
 
 export type User = {
   id: number;
@@ -27,6 +28,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        ...(options.method && options.method !== "GET" ? csrfHeader() : {}),
         ...options.headers,
       },
     });

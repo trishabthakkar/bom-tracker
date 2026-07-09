@@ -50,6 +50,14 @@ async def upload_file(
     db.add(upload)
     db.commit()
     db.refresh(upload)
+    audit_event(
+        event="upload.created",
+        user_id=current_user.id,
+        filename=upload.original_filename,
+        category=upload.upload_category,
+        upload_id=upload.id,
+        replace_existing=replace_existing,
+    )
     return UploadedFileRead.model_validate(upload)
 
 
@@ -124,3 +132,4 @@ def _mark_matching_uploads_replaced(
         db.add(report)
 
     db.flush()
+from app.core.audit import audit_event

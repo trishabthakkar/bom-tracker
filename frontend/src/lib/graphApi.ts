@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/lib/apiBase";
 import { getApiErrorMessage } from "@/lib/apiErrors";
+import { csrfHeader } from "@/lib/csrf";
 
 export type GraphEdge = {
   source: string;
@@ -26,6 +27,7 @@ export async function buildGraph(uploadId: number): Promise<GraphBuild> {
   const response = await fetch(`${API_BASE_URL}/api/v1/graph/build/${uploadId}`, {
     method: "POST",
     credentials: "include",
+    headers: csrfHeader(),
   });
 
   if (!response.ok) {

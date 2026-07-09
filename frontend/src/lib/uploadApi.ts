@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/lib/apiBase";
+import { getCsrfToken, CSRF_HEADER_NAME } from "@/lib/csrf";
 
 export type UploadCategory = "bom" | "eco" | "document";
 
@@ -58,6 +59,10 @@ export function uploadFile({
     request.onerror = () => reject(new Error("Upload failed. Check your connection."));
     request.withCredentials = true;
     request.open("POST", `${API_BASE_URL}/api/v1/uploads`);
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      request.setRequestHeader(CSRF_HEADER_NAME, csrfToken);
+    }
     request.send(formData);
   });
 }

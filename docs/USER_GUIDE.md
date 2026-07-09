@@ -90,6 +90,7 @@ Current persisted tables:
 - `eco_records`
 - `graph_snapshots`
 - `impact_reports`
+- `jobs`
 - Alembic migration version table
 
 ## Authentication
@@ -124,6 +125,10 @@ Security behavior:
 - Unauthenticated users are redirected to `/login`.
 - Cookies use `SameSite=Lax`.
 - Secure cookies are enabled automatically outside local development.
+- Cookie-authenticated mutation requests require a matching CSRF cookie and `X-CSRF-Token` header.
+- Login/register and authenticated mutation routes have in-memory rate limits for local MVP protection.
+- Security headers are added to responses to reduce browser-side attack surface.
+- Auth, upload, and background job creation events are written to audit logs.
 
 If PostgreSQL is not running, signup/login will show:
 
@@ -836,7 +841,8 @@ Both are allowed by backend CORS config.
 - No external LLM provider is connected yet.
 - No PDF export, report sharing, approval workflow, or team permissions yet.
 - Background jobs use FastAPI in-process workers for MVP; a production queue such as Celery, RQ, or Arq is not connected yet.
+- Password reset, email verification, server-side token revocation, RBAC, and virus scanning are not implemented yet.
 
 ## Recommended Next Phases
 
-Phase 14 should harden security with CSRF protection, rate limiting, password recovery, audit logs, stronger upload scanning, and role-based access control.
+Phase 15 should add a real LLM provider behind the existing ECO parsing abstraction.

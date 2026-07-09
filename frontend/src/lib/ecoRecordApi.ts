@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/lib/apiBase";
 import { getApiErrorMessage } from "@/lib/apiErrors";
+import { csrfHeader } from "@/lib/csrf";
 
 export type EcoRecord = {
   id: number;
@@ -34,6 +35,7 @@ export async function saveEcoText(text: string): Promise<EcoRecordDetail> {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...csrfHeader(),
     },
     body: JSON.stringify({ text }),
   });
@@ -49,6 +51,7 @@ export async function saveEcoUpload(uploadId: number): Promise<EcoRecordDetail> 
   const response = await fetch(`${API_BASE_URL}/api/v1/eco-records/parse-upload/${uploadId}`, {
     method: "POST",
     credentials: "include",
+    headers: csrfHeader(),
   });
 
   if (!response.ok) {
