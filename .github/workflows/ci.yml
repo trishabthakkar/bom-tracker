@@ -30,6 +30,12 @@ jobs:
       - name: Run backend tests
         run: backend/.venv/bin/pytest
 
+      - name: Run performance smoke
+        env:
+          PYTHONPATH: backend
+          PERF_BOM_ROWS: "100"
+        run: backend/.venv/bin/python scripts/performance_smoke.py
+
       - name: Validate Alembic migrations
         env:
           DATABASE_URL: sqlite:////tmp/bom_tracker_ci.sqlite

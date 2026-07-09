@@ -1068,4 +1068,6 @@ Both are allowed by backend CORS config.
 
 ## Recommended Next Phases
 
-Phase 20 should add end-to-end QA and release readiness: browser workflow tests, realistic fixtures, performance checks, accessibility audit, security checklist, and pilot release checklist.
+Phase 20 added end-to-end QA and release readiness docs, API smoke scripts, performance checks, and realistic BOM comparison fixtures.
+
+Phase 21 should add browser-level E2E tests and a visual dependency graph so the full workflow can be validated exactly as a pilot user experiences it.

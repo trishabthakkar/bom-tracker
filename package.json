@@ -11,6 +11,8 @@
     "lint": "npm --prefix frontend run lint",
     "backend:dev": "backend/.venv/bin/uvicorn app.main:app --reload --app-dir backend",
     "backend:test": "backend/.venv/bin/pytest",
+    "qa:e2e": "backend/.venv/bin/python scripts/e2e_api_workflow.py",
+    "qa:perf": "PYTHONPATH=backend backend/.venv/bin/python scripts/performance_smoke.py",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:migrate": "cd backend && .venv/bin/alembic upgrade head",

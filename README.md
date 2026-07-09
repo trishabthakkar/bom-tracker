@@ -41,8 +41,13 @@ bom-tracker/
 │   └── .env.example
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── QA_PLAN.md
+│   ├── RELEASE_CHECKLIST.md
 │   ├── PRODUCTION.md
 │   └── PROJECT_CONTEXT.md
+├── scripts/
+│   ├── e2e_api_workflow.py
+│   └── performance_smoke.py
 ├── docker-compose.prod.yml
 ├── .gitignore
 ├── package.json
@@ -132,6 +137,7 @@ Default URLs:
 - Backend API: `http://localhost:8000`
 - Backend docs: `http://localhost:8000/docs`
 - Backend health: `http://localhost:8000/api/v1/health`
+- Backend readiness: `http://localhost:8000/api/v1/ready`
 
 ## Authentication
 
@@ -451,6 +457,30 @@ GET /api/v1/ready
 
 See `docs/PRODUCTION.md` for deployment, health checks, backups, restore steps, and security notes.
 
+## QA and Release Readiness
+
+Phase 20 adds repeatable QA assets:
+
+- `demo-files/demo-bom-v2.csv` for BOM version comparison.
+- `backend/app/tests/test_end_to_end_workflow.py` for a service-level full workflow test.
+- `scripts/performance_smoke.py` for parser and graph performance checks.
+- `scripts/e2e_api_workflow.py` for a live API smoke test against a running backend.
+- `docs/QA_PLAN.md` for automated, manual, accessibility, and security checks.
+- `docs/RELEASE_CHECKLIST.md` for deployment validation and rollback steps.
+
+Run the local QA commands:
+
+```bash
+npm run backend:test
+npm run qa:perf
+```
+
+Run the live API smoke test after PostgreSQL, migrations, and the backend are running:
+
+```bash
+npm run qa:e2e
+```
+
 ## Root Scripts
 
 From the repository root:
@@ -461,6 +491,8 @@ npm run build
 npm run lint
 npm run backend:dev
 npm run backend:test
+npm run qa:e2e
+npm run qa:perf
 npm run db:up
 npm run db:migrate
 npm run db:reset-data

@@ -286,6 +286,28 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
   - `npm run prod:logs`
 - Documented backup, restore, deployment, security, and operational limits.
 
+### Phase 20 - End-to-End QA and Release Readiness
+
+- Added `demo-files/demo-bom-v2.csv` for realistic BOM version comparison.
+- Added a service-level end-to-end workflow test covering:
+  - normalized BOM imports
+  - graph snapshot creation
+  - BOM diffing and replacement candidates
+  - ECO parsing and approval
+  - downstream document section matching
+  - persisted impact report generation
+  - report comments
+  - report sign-off
+  - CSV/PDF exports
+- Added live API smoke script `scripts/e2e_api_workflow.py`.
+- Added performance smoke script `scripts/performance_smoke.py`.
+- Added root QA scripts:
+  - `npm run qa:e2e`
+  - `npm run qa:perf`
+- Added `docs/QA_PLAN.md` with automated checks, manual workflow checks, accessibility checks, security checks, and known QA limits.
+- Added `docs/RELEASE_CHECKLIST.md` with pre-release, validation, deployment, rollback, and pilot acceptance steps.
+- Added the performance smoke script to CI with a small generated BOM.
+
 ## Backend Endpoints
 
 Public:
@@ -592,26 +614,60 @@ Current limitation:
 - Virus scanning.
 - Advanced MIME/content sniffing.
 - Object storage such as S3.
+- Browser-level end-to-end tests with Playwright or Cypress.
+- Load testing against a deployed multi-user environment.
 
 ## Remaining Implementation Roadmap
 
-### Phase 20 - End-to-End QA and Release Readiness
+### Phase 21 - Browser E2E and Visual Graph
 
-Goal: validate the complete application workflow.
+Goal: validate real browser behavior and make dependency analysis easier to inspect.
 
 Tasks:
 
-- Add end-to-end tests for login, upload BOM, parse BOM, upload/parse ECO, generate report, view report.
-- Add realistic fixtures for BOM CSV, BOM XLSX, ECO PDFs, and manuals.
-- Add performance testing for larger BOMs.
-- Add accessibility audit.
-- Add security review checklist.
-- Add release checklist.
+- Add Playwright tests for registration, upload, parsing, ECO approval, report generation, and export controls.
+- Add a visual dependency graph renderer.
+- Add graph filtering, search, zoom, and affected-path highlighting.
+- Add larger frontend accessibility checks in CI.
+- Add screenshots or videos for demo validation.
 
 Definition of done:
 
-- The application is ready for pilot users with a documented set of known limitations.
+- A pilot workflow can be verified through both API-level and browser-level tests.
+
+### Phase 22 - Roles, Teams, and Approvals
+
+Goal: support real engineering approval ownership.
+
+Tasks:
+
+- Add organizations or workspaces.
+- Add role-based permissions.
+- Add approver assignment for ECOs and reports.
+- Add immutable approval audit events.
+- Add team-visible reports and upload history.
+
+Definition of done:
+
+- Multiple users can collaborate on the same BOM/ECO/report workflow with clear authorization boundaries.
+
+### Phase 23 - Durable Processing and Storage
+
+Goal: make long-running production workloads resilient.
+
+Tasks:
+
+- Replace FastAPI `BackgroundTasks` with a durable queue.
+- Add worker process deployment.
+- Move upload storage to object storage.
+- Add virus scanning/content scanning.
+- Add retry policies and dead-letter handling.
+- Add observability dashboards for failed jobs and processing time.
+
+Definition of done:
+
+- Large files and slow jobs can survive process restarts and deployment cycles.
 
 ## Recommended Next Phase
 
-Proceed with Phase 20: End-to-End QA and Release Readiness.
+Proceed with Phase 21: Browser E2E and Visual Graph.
