@@ -44,6 +44,17 @@ export type SavedImpactReportDetail = SavedImpactReport & {
       impact: string;
       severity: string;
     }>;
+    affected_document_sections: Array<{
+      document_id: number;
+      document_title: string | null;
+      filename: string;
+      document_type: string;
+      section_id: number;
+      heading: string;
+      matched_parts: string[];
+      excerpt: string;
+      severity: string;
+    }>;
     suggested_updates: Array<{
       area: string;
       action: string;

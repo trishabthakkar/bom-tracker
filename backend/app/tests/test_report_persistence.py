@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.base import Base
+from app.models.document import DocumentSection, EngineeringDocument
 from app.models.report import ImpactReport
 from app.models.upload import UploadedFile
 from app.models.user import User
@@ -49,6 +50,35 @@ def create_bom_upload(db: Session, path: Path) -> tuple[User, UploadedFile]:
     return user, upload
 
 
+def create_indexed_document(db: Session, user: User, upload: UploadedFile) -> EngineeringDocument:
+    document = EngineeringDocument(
+        user_id=user.id,
+        upload_id=upload.id,
+        filename="service-manual.pdf",
+        document_type="service_manual",
+        title="Cooling Skid Service Manual",
+        status="indexed",
+        section_count=1,
+        part_references=["PN-1212"],
+    )
+    db.add(document)
+    db.flush()
+    db.add(
+        DocumentSection(
+            document_id=document.id,
+            user_id=user.id,
+            upload_id=upload.id,
+            section_index=1,
+            heading="Relief valve replacement",
+            content="Replace PN-1212 after isolating the cooling manifold.",
+            part_references=["PN-1212"],
+        )
+    )
+    db.commit()
+    db.refresh(document)
+    return document
+
+
 def test_generate_and_save_impact_report_persists_report(tmp_path: Path) -> None:
     path = tmp_path / "bom.csv"
     path.write_text(
@@ -58,6 +88,7 @@ def test_generate_and_save_impact_report_persists_report(tmp_path: Path) -> None
     )
     db = build_session()
     user, upload = create_bom_upload(db, path)
+    create_indexed_document(db, user, upload)
 
     report = generate_and_save_impact_report(
         db=db,
@@ -78,4 +109,6 @@ def test_generate_and_save_impact_report_persists_report(tmp_path: Path) -> None
     assert report.risk_level in {"Medium", "High"}
     assert report.affected_part == "PN-1212"
     assert structured.affected_part == "PN-1212"
+    assert len(structured.affected_document_sections) == 1
+    assert structured.affected_document_sections[0].heading == "Relief valve replacement"
     assert structured.downstream_records

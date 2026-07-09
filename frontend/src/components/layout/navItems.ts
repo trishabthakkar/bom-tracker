@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Clock3,
+  Files,
   FileText,
   GitBranch,
   LayoutDashboard,
@@ -19,6 +20,7 @@ export const navItems: NavItem[] = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
   { label: "Upload BOM", path: "/upload-bom", icon: Upload },
   { label: "Upload ECO", path: "/upload-eco", icon: FileText },
+  { label: "Documents", path: "/documents", icon: Files },
   { label: "Reports", path: "/reports", icon: BarChart3 },
   { label: "Dependency Graph", path: "/dependency-graph", icon: GitBranch },
   { label: "History", path: "/history", icon: Clock3 },

@@ -9,11 +9,13 @@ from app.models.graph_snapshot import GraphSnapshot
 from app.models.report import ImpactReport
 from app.models.upload import UploadedFile
 from app.schemas.impact import StructuredImpactReport
+from app.schemas.impact import DocumentSectionImpact
 from app.services.bom_importer import (
     get_latest_bom_import_for_upload,
     import_bom_upload,
 )
 from app.services.dependency_graph import build_dependency_graph
+from app.services.documents import find_sections_referencing_parts
 from app.services.eco_records import create_eco_record
 from app.services.eco_parser import EngineeringChangeParser
 from app.services.intelligence_layer import IntelligenceLayer
@@ -72,7 +74,16 @@ def generate_and_save_impact_report(
         source_text=eco_text,
     )
     graph = build_dependency_graph(parsed_bom.rows)
-    report = IntelligenceLayer().generate_report(graph=graph, eco=parsed_eco)
+    document_sections = _build_document_section_impacts(
+        db=db,
+        user_id=user_id,
+        part_numbers=_candidate_document_parts(parsed_eco),
+    )
+    report = IntelligenceLayer().generate_report(
+        graph=graph,
+        eco=parsed_eco,
+        document_sections=document_sections,
+    )
 
     return save_impact_report(
         db=db,
@@ -145,3 +156,44 @@ def archive_report(*, db: Session, report: ImpactReport) -> ImpactReport:
 
 def report_to_structured(report: ImpactReport) -> StructuredImpactReport:
     return StructuredImpactReport.model_validate(report.report_json)
+
+
+def _candidate_document_parts(parsed_eco) -> list[str]:
+    return [part for part in [parsed_eco.old_part, parsed_eco.new_part] if part]
+
+
+def _build_document_section_impacts(
+    *,
+    db: Session,
+    user_id: int,
+    part_numbers: list[str],
+) -> list[DocumentSectionImpact]:
+    impacts: list[DocumentSectionImpact] = []
+
+    for document, section, matched_parts in find_sections_referencing_parts(
+        db=db,
+        user_id=user_id,
+        part_numbers=part_numbers,
+    ):
+        impacts.append(
+            DocumentSectionImpact(
+                document_id=document.id,
+                document_title=document.title,
+                filename=document.filename,
+                document_type=document.document_type,
+                section_id=section.id,
+                heading=section.heading,
+                matched_parts=matched_parts,
+                excerpt=_excerpt(section.content),
+                severity="high" if document.document_type in {"service_manual", "installation_guide"} else "medium",
+            )
+        )
+
+    return impacts
+
+
+def _excerpt(content: str, limit: int = 260) -> str:
+    cleaned = " ".join(content.split())
+    if len(cleaned) <= limit:
+        return cleaned
+    return f"{cleaned[: limit - 3]}..."

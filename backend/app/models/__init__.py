@@ -1,5 +1,6 @@
 """SQLAlchemy models for BOM intelligence data."""
 from app.models.bom import AssemblyRelationship, BomImport, BomPart
+from app.models.document import DocumentSection, EngineeringDocument
 from app.models.eco import EcoRecord
 from app.models.graph_snapshot import GraphSnapshot
 from app.models.job import Job
@@ -11,7 +12,9 @@ __all__ = [
     "AssemblyRelationship",
     "BomImport",
     "BomPart",
+    "DocumentSection",
     "EcoRecord",
+    "EngineeringDocument",
     "GraphSnapshot",
     "ImpactReport",
     "Job",

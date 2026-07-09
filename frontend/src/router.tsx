@@ -3,6 +3,7 @@ import { App } from "@/App";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { PublicRoute } from "@/auth/PublicRoute";
 import { DependencyGraphPage } from "@/pages/DependencyGraphPage";
+import { DocumentsPage } from "@/pages/DocumentsPage";
 import { HistoryPage } from "@/pages/HistoryPage";
 import { HomePage } from "@/pages/HomePage";
 import { AuthLayout } from "@/pages/AuthLayout";
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
           { index: true, element: <HomePage /> },
           { path: "upload-bom", element: <UploadBomPage /> },
           { path: "upload-eco", element: <UploadEcoPage /> },
+          { path: "documents", element: <DocumentsPage /> },
           { path: "reports", element: <ReportsPage /> },
           { path: "reports/:reportId", element: <ReportDetailPage /> },
           { path: "dependency-graph", element: <DependencyGraphPage /> },

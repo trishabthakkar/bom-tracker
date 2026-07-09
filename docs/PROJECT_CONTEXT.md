@@ -210,6 +210,18 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 - Added deterministic fallback to `RuleBasedLLMProvider` when remote provider calls fail and fallback is enabled.
 - Added unit coverage for OpenAI response parsing and fallback behavior.
 
+### Phase 16 - Downstream Document Intelligence
+
+- Added engineering document indexing for uploaded PDF manuals and downstream records.
+- Added `engineering_documents` and `document_sections` persistence tables.
+- Added document section extraction, document type inference, and part reference detection.
+- Added protected document APIs for indexing, listing, detail inspection, and affected-section lookup.
+- Added a frontend Documents page for PDF upload, indexing, document history, section previews, and detected part references.
+- Connected saved impact reports to indexed document sections that reference ECO old/new parts.
+- Added affected document sections to structured impact report JSON and report detail UI.
+- Increased report risk scoring when affected downstream document sections are found.
+- Added parser, report persistence, and document endpoint regression tests.
+
 ## Backend Endpoints
 
 Public:
@@ -251,6 +263,10 @@ Protected:
 - `POST /api/v1/jobs/reports/impact-report`
 - `GET /api/v1/jobs`
 - `GET /api/v1/jobs/{job_id}`
+- `POST /api/v1/documents/from-upload/{upload_id}`
+- `GET /api/v1/documents`
+- `GET /api/v1/documents/{document_id}`
+- `GET /api/v1/documents/affected/{part_number}`
 
 Authentication is also available under `/api/v1` through the API router for compatibility.
 
@@ -412,6 +428,34 @@ Persistence behavior:
 - The legacy intelligence endpoint still returns a transient report.
 - `/api/v1/reports/impact-report` generates and persists saved reports.
 
+## Downstream Document Intelligence
+
+Supported input files:
+
+- PDF engineering documents uploaded with category `document`
+
+Indexed document types:
+
+- installation guides
+- commissioning procedures
+- service manuals
+- procurement records
+- generic engineering documents
+
+Current behavior:
+
+- Extracts PDF text.
+- Splits text into titled sections.
+- Detects part references such as `PN-1212`, `PN 1212`, `ASM-1000`, and similar part-like identifiers.
+- Persists each indexed document and section.
+- Archives the older indexed document when the same upload is re-indexed.
+- Lets users inspect indexed document sections in the frontend.
+- Lets saved reports include exact downstream document sections when those sections reference the ECO old or new part.
+
+Current limitation:
+
+- Document parsing is deterministic text extraction and regex matching. It does not yet use semantic LLM matching or manual review/approval.
+
 ## Security Decisions
 
 - Passwords are hashed with bcrypt.
@@ -428,8 +472,7 @@ Persistence behavior:
 
 ## Out of Scope So Far
 
-- Manual/service/installation/commissioning document parsing.
-- Exact downstream document section matching.
+- Semantic LLM matching for downstream document sections.
 - Visual frontend dependency graph rendering.
 - Durable external worker queue such as Celery/RQ/Arq.
 - Password reset and email verification flows.
@@ -440,23 +483,6 @@ Persistence behavior:
 - Object storage such as S3.
 
 ## Remaining Implementation Roadmap
-
-### Phase 16 - Downstream Document Intelligence
-
-Goal: identify exact downstream documents and sections affected by engineering changes.
-
-Tasks:
-
-- Add models for procurement records, installation guides, commissioning procedures, and service manuals.
-- Upload and parse engineering documentation.
-- Extract document sections and part references.
-- Link parts and assemblies to document sections.
-- Identify exact sections needing updates.
-- Generate structured recommended changes per downstream artifact.
-
-Definition of done:
-
-- Impact reports can name the real downstream records and sections that need review.
 
 ### Phase 17 - Advanced BOM and ECO Workflows
 
@@ -533,4 +559,4 @@ Definition of done:
 
 ## Recommended Next Phase
 
-Proceed with Phase 16: Downstream Document Intelligence.
+Proceed with Phase 17: Advanced BOM and ECO Workflows.

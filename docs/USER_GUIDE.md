@@ -4,7 +4,7 @@ This guide explains every current feature in the MVP, how to use it, and how it 
 
 ## What The App Does
 
-The application helps analyze engineering changes and understand downstream impact across BOM structures, assemblies, parts, and future engineering documentation.
+The application helps analyze engineering changes and understand downstream impact across BOM structures, assemblies, parts, and indexed engineering documentation.
 
 Current MVP capabilities:
 
@@ -15,6 +15,8 @@ Current MVP capabilities:
 - Dependency graph construction through the backend API.
 - Plain-text and PDF ECO parsing, with persisted text ECO records.
 - Deterministic saved impact report generation.
+- PDF engineering document indexing for manuals and downstream records.
+- Affected document section matching inside saved impact reports.
 - Engineering dashboard with real upload, report, import, and ECO activity data.
 - Frontend report generation, ECO upload parsing, and dependency graph exploration.
 
@@ -91,6 +93,8 @@ Current persisted tables:
 - `graph_snapshots`
 - `impact_reports`
 - `jobs`
+- `engineering_documents`
+- `document_sections`
 - Alembic migration version table
 
 ## Authentication
@@ -158,6 +162,7 @@ Sidebar pages:
 - Upload ECO
 - Reports
 - Dependency Graph
+- Documents
 - History
 - Settings
 
@@ -322,6 +327,67 @@ POST /api/v1/jobs/eco-records/parse-upload/{upload_id}
 That queues a background job. The job extracts text from the PDF, parses structured ECO fields, and persists the ECO record.
 
 The page also includes a plain-text ECO parser. Paste or edit ECO text and click `Save parsed ECO` to persist extracted fields.
+
+## Engineering Documents
+
+### How To Use It
+
+Open:
+
+```text
+/documents
+```
+
+Accepted files:
+
+- `.pdf`
+
+Steps:
+
+1. Upload an installation guide, commissioning procedure, service manual, procurement record, or engineering manual PDF.
+2. After upload completes, the frontend indexes the document.
+3. Review the indexed document list.
+4. Select a document to inspect detected sections and part references.
+5. Generate a saved impact report from the Reports page. If the ECO references a part found in indexed documents, the report detail page lists affected document sections.
+
+### How It Works
+
+The page uploads PDFs through the same secure upload system with:
+
+```text
+upload_category=document
+```
+
+After upload, the frontend calls:
+
+```text
+POST /api/v1/documents/from-upload/{upload_id}
+```
+
+The backend:
+
+- verifies the upload belongs to the current user
+- extracts PDF text
+- infers the document type from filename and text
+- splits the document into sections
+- detects part references such as `PN-1212`, `PN 1212`, and `ASM-1000`
+- stores indexed document metadata in `engineering_documents`
+- stores section text and part references in `document_sections`
+
+Document inspection uses:
+
+```text
+GET /api/v1/documents
+GET /api/v1/documents/{document_id}
+```
+
+Affected section lookup is available through:
+
+```text
+GET /api/v1/documents/affected/{part_number}
+```
+
+This is deterministic text matching in the MVP. It does not yet understand semantic references such as “the legacy relief valve” unless a part number is present.
 
 ## Upload History
 
@@ -560,6 +626,7 @@ The response contains:
 - effective date
 - affected assemblies
 - downstream records
+- affected document sections, when indexed documents mention the ECO part
 - suggested updates
 - risk assessment
 
@@ -573,8 +640,9 @@ The backend:
 4. Parses the ECO text.
 5. Finds affected parents, children, and dependency paths.
 6. Generates downstream record impacts.
-7. Produces a risk score and risk level.
-8. Returns a structured impact report.
+7. Looks for indexed document sections that reference the ECO old or new part.
+8. Produces a risk score and risk level.
+9. Returns a structured impact report.
 
 Downstream categories currently considered:
 
@@ -584,6 +652,16 @@ Downstream categories currently considered:
 - service manuals
 
 Saved reports are persisted in PostgreSQL and visible in the Reports page.
+
+When matched document sections exist, saved report detail pages show:
+
+- document title
+- filename
+- document type
+- section heading
+- matched part numbers
+- short excerpt
+- suggested review/update context
 
 ## Reports Page
 
@@ -851,10 +929,11 @@ Both are allowed by backend CORS config.
 ## Current MVP Limitations
 
 - Dependency graph data is shown through metrics, lookup lists, and edge tables, not a full interactive graph canvas yet.
+- Document intelligence uses PDF text extraction and part-number matching, not semantic LLM review.
 - No PDF export, report sharing, approval workflow, or team permissions yet.
 - Background jobs use FastAPI in-process workers for MVP; a production queue such as Celery, RQ, or Arq is not connected yet.
 - Password reset, email verification, server-side token revocation, RBAC, and virus scanning are not implemented yet.
 
 ## Recommended Next Phases
 
-Phase 16 should add downstream document intelligence for procurement records, installation guides, commissioning procedures, and service manuals.
+Phase 17 should add advanced BOM and ECO workflows: BOM versioning, BOM diffs, ECO approval states, parser correction screens, confidence warnings, and user approval/rejection of suggested updates.

@@ -137,6 +137,35 @@ export function ReportDetailPage() {
           </div>
         </DashboardCard>
       </section>
+
+      <DashboardCard title="Affected document sections">
+        {report.report.affected_document_sections.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No indexed document sections referenced the affected part.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {report.report.affected_document_sections.map((section) => (
+              <div key={section.section_id} className="rounded-md border p-3 text-sm">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-medium">{section.heading}</p>
+                    <p className="mt-1 text-muted-foreground">
+                      {section.document_title ?? section.filename} •{" "}
+                      {section.document_type.replace(/_/g, " ")}
+                    </p>
+                  </div>
+                  <RiskBadge level={section.severity} />
+                </div>
+                <p className="mt-2 text-muted-foreground">{section.excerpt}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Matched parts: {section.matched_parts.join(", ")}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </DashboardCard>
     </div>
   );
 }

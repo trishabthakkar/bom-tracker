@@ -3,6 +3,7 @@ import networkx as nx
 from app.schemas.eco import ParsedEngineeringChange
 from app.schemas.impact import (
     AffectedAssembly,
+    DocumentSectionImpact,
     DownstreamRecordImpact,
     RiskAssessment,
     StructuredImpactReport,
@@ -24,20 +25,34 @@ class IntelligenceLayer:
         *,
         graph: nx.DiGraph,
         eco: ParsedEngineeringChange,
+        document_sections: list[DocumentSectionImpact] | None = None,
     ) -> StructuredImpactReport:
         affected_part = _select_affected_part(eco)
         affected_assemblies = _build_affected_assemblies(graph, affected_part)
         downstream_records = _build_downstream_records(eco, affected_assemblies)
+        affected_document_sections = document_sections or []
         suggested_updates = _build_suggested_updates(eco, affected_assemblies)
-        risk = _assess_risk(eco, affected_assemblies, downstream_records)
+        risk = _assess_risk(
+            eco,
+            affected_assemblies,
+            downstream_records,
+            affected_document_sections,
+        )
 
         return StructuredImpactReport(
-            summary=_build_summary(eco, affected_part, risk.level, affected_assemblies),
+            summary=_build_summary(
+                eco,
+                affected_part,
+                risk.level,
+                affected_assemblies,
+                affected_document_sections,
+            ),
             eco=eco,
             affected_part=affected_part,
             effective_date=eco.effective_date,
             affected_assemblies=affected_assemblies,
             downstream_records=downstream_records,
+            affected_document_sections=affected_document_sections,
             suggested_updates=suggested_updates,
             risk=risk,
         )
@@ -148,6 +163,7 @@ def _assess_risk(
     eco: ParsedEngineeringChange,
     affected_assemblies: list[AffectedAssembly],
     downstream_records: list[DownstreamRecordImpact],
+    affected_document_sections: list[DocumentSectionImpact],
 ) -> RiskAssessment:
     score = 0
     reasons: list[str] = []
@@ -177,6 +193,12 @@ def _assess_risk(
         score += min(20, len(high_or_medium_records) * 5)
         reasons.append(f"{len(high_or_medium_records)} downstream record categories need review.")
 
+    if affected_document_sections:
+        score += min(15, len(affected_document_sections) * 3)
+        reasons.append(
+            f"{len(affected_document_sections)} downstream document sections reference affected parts."
+        )
+
     if eco.effective_date:
         score += 5
         reasons.append("Effective date is present and should drive rollout timing.")
@@ -195,6 +217,7 @@ def _build_summary(
     affected_part: str | None,
     risk_level: str,
     affected_assemblies: list[AffectedAssembly],
+    affected_document_sections: list[DocumentSectionImpact],
 ) -> str:
     part_text = affected_part or "an unspecified part"
     assembly_count = (
@@ -204,5 +227,6 @@ def _build_summary(
 
     return (
         f"{change_type.title()} for {part_text} has {risk_level.lower()} risk "
-        f"with {assembly_count} affected parent assemblies identified."
+        f"with {assembly_count} affected parent assemblies and "
+        f"{len(affected_document_sections)} document sections identified."
     )

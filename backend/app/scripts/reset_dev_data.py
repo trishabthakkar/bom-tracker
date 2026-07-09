@@ -4,6 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.session import SessionLocal
 from app.models.bom import AssemblyRelationship, BomImport, BomPart
+from app.models.document import DocumentSection, EngineeringDocument
 from app.models.eco import EcoRecord
 from app.models.graph_snapshot import GraphSnapshot
 from app.models.job import Job
@@ -17,6 +18,8 @@ MODELS_IN_DELETE_ORDER = [
     Job,
     ImpactReport,
     GraphSnapshot,
+    DocumentSection,
+    EngineeringDocument,
     AssemblyRelationship,
     BomPart,
     EcoRecord,

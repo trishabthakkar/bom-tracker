@@ -2,7 +2,7 @@
 
 A modern full-stack MVP for analyzing engineering changes and downstream BOM impact.
 
-The application currently supports authentication, secure uploads, BOM parsing, persisted BOM imports, dependency graph analysis, persisted ECO records, saved deterministic impact reports, and frontend workflows connected to real backend data. AI provider integration is intentionally deferred to later phases.
+The application currently supports authentication, secure uploads, BOM parsing, persisted BOM imports, dependency graph analysis, persisted ECO records, optional AI-backed ECO parsing, indexed engineering documents, saved impact reports, and frontend workflows connected to real backend data.
 
 ## Repository Structure
 
@@ -327,6 +327,21 @@ GET  /api/v1/reports/{report_id}
 ```
 
 The frontend now shows live dashboard metrics, normalized BOM import status, saved ECO records, saved report history, report detail pages, report generation from a BOM import selector, automatic ECO PDF parsing after upload, and a dependency graph explorer.
+
+## Downstream Documents
+
+Phase 16 adds PDF engineering document indexing for manuals and downstream records.
+
+Endpoints:
+
+```text
+POST /api/v1/documents/from-upload/{upload_id}
+GET  /api/v1/documents
+GET  /api/v1/documents/{document_id}
+GET  /api/v1/documents/affected/{part_number}
+```
+
+The Documents page supports PDF upload and indexing for installation guides, commissioning procedures, service manuals, procurement records, and generic engineering documents. Indexed sections store detected part references, and saved impact reports include affected document sections when an ECO references a matching part.
 
 ## Background Jobs
 

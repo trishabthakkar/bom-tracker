@@ -29,6 +29,18 @@ class SuggestedUpdate(BaseModel):
     priority: str
 
 
+class DocumentSectionImpact(BaseModel):
+    document_id: int
+    document_title: str | None = None
+    filename: str
+    document_type: str
+    section_id: int
+    heading: str
+    matched_parts: list[str] = Field(default_factory=list)
+    excerpt: str
+    severity: str
+
+
 class RiskAssessment(BaseModel):
     level: str
     score: int
@@ -42,5 +54,6 @@ class StructuredImpactReport(BaseModel):
     effective_date: date | None
     affected_assemblies: list[AffectedAssembly] = Field(default_factory=list)
     downstream_records: list[DownstreamRecordImpact] = Field(default_factory=list)
+    affected_document_sections: list[DocumentSectionImpact] = Field(default_factory=list)
     suggested_updates: list[SuggestedUpdate] = Field(default_factory=list)
     risk: RiskAssessment

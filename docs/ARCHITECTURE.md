@@ -39,7 +39,7 @@ Key frontend decisions:
 - `AuthProvider` recovers session state from `/me`.
 - JWTs are not stored in JavaScript; auth relies on the backend HttpOnly cookie.
 - Uploads use `XMLHttpRequest` because browser `fetch` does not expose upload progress events.
-- Domain-specific API clients live in `lib/` and cover auth, uploads, jobs, BOM imports, ECO records, graph analysis, and reports.
+- Domain-specific API clients live in `lib/` and cover auth, uploads, jobs, BOM imports, ECO records, graph analysis, documents, and reports.
 - Dashboard and workflow pages load authenticated backend data directly instead of relying on static placeholders.
 
 ## Backend Architecture
@@ -165,6 +165,22 @@ This is intentionally compatible with the existing synchronous endpoints. A futu
 4. `/api/v1/eco-records/*` workflows persist parsed fields.
 5. Frontend shows saved ECO records for later workflows.
 
+## Document Intelligence Flow
+
+1. User uploads a PDF from the Documents page with `upload_category=document`.
+2. Frontend calls `/api/v1/documents/from-upload/{upload_id}` after upload completes.
+3. API validates upload ownership and document file type.
+4. `services/pdf_text_extractor.py` extracts PDF text.
+5. `services/document_parser.py` splits text into sections and detects part references.
+6. `services/documents.py` infers document type and persists:
+   - indexed document metadata in `engineering_documents`
+   - section text and part references in `document_sections`
+7. Frontend lists indexed documents through `/api/v1/documents`.
+8. Frontend opens section previews through `/api/v1/documents/{document_id}`.
+9. Affected-section lookup is available through `/api/v1/documents/affected/{part_number}`.
+
+Current document intelligence is deterministic. It relies on extracted text and part-like identifiers, not semantic LLM matching.
+
 ## Intelligence Flow
 
 1. API verifies uploaded BOM ownership.
@@ -172,9 +188,11 @@ This is intentionally compatible with the existing synchronous endpoints. A futu
 3. Dependency graph service builds a directed graph.
 4. ECO parser returns structured change data.
 5. `services/intelligence_layer.py` combines the inputs.
-6. API returns a structured impact report with:
+6. `services/report_persistence.py` checks indexed document sections for ECO old/new part references when generating saved reports.
+7. API returns a structured impact report with:
    - affected assemblies
    - downstream record impacts
+   - affected document sections
    - suggested updates
    - risk assessment
 
@@ -183,10 +201,11 @@ This is intentionally compatible with the existing synchronous endpoints. A futu
 1. Frontend calls `/api/v1/jobs/reports/impact-report`.
 2. Background worker reuses or creates a normalized BOM import.
 3. Worker parses and saves the ECO record.
-4. `services/intelligence_layer.py` generates the structured report.
-5. `services/report_persistence.py` stores report metadata and full structured JSON.
-6. Job result metadata includes the saved report id.
-7. Frontend refreshes saved reports and renders report detail pages.
+4. Worker finds indexed document sections that reference ECO old/new parts.
+5. `services/intelligence_layer.py` generates the structured report.
+6. `services/report_persistence.py` stores report metadata and full structured JSON.
+7. Job result metadata includes the saved report id.
+8. Frontend refreshes saved reports and renders report detail pages.
 
 ## Logging and Errors
 

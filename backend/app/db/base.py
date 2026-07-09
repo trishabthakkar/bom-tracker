@@ -1,5 +1,6 @@
 from app.db.base_class import Base
 from app.models.bom import AssemblyRelationship, BomImport, BomPart
+from app.models.document import DocumentSection, EngineeringDocument
 from app.models.eco import EcoRecord
 from app.models.graph_snapshot import GraphSnapshot
 from app.models.job import Job
@@ -12,7 +13,9 @@ __all__ = [
     "Base",
     "BomImport",
     "BomPart",
+    "DocumentSection",
     "EcoRecord",
+    "EngineeringDocument",
     "GraphSnapshot",
     "Job",
     "ImpactReport",
