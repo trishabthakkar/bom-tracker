@@ -37,6 +37,7 @@ export function UploadPageShell({
   const [historyLoading, setHistoryLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [replaceExisting, setReplaceExisting] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,9 +95,14 @@ export function UploadPageShell({
       const uploaded = await uploadFile({
         file: selectedFile,
         category,
+        replaceExisting,
         onProgress: setProgress,
       });
-      setMessage(`${uploaded.original_filename} uploaded successfully.`);
+      setMessage(
+        replaceExisting
+          ? `${uploaded.original_filename} uploaded successfully. Older files with the same name were replaced.`
+          : `${uploaded.original_filename} uploaded successfully.`,
+      );
       setSelectedFile(null);
       await onUploadComplete?.(uploaded);
       await refreshHistory();
@@ -142,6 +148,22 @@ export function UploadPageShell({
             ) : null}
 
             {uploading ? <UploadProgress progress={progress} /> : null}
+
+            <label className="flex items-start gap-3 rounded-md border bg-muted/20 p-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-primary"
+                checked={replaceExisting}
+                disabled={uploading}
+                onChange={(event) => setReplaceExisting(event.target.checked)}
+              />
+              <span>
+                <span className="block font-medium">Replace files with the same name</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Keeps the latest upload active and hides older matching files from workflows.
+                </span>
+              </span>
+            </label>
 
             {message ? (
               <div

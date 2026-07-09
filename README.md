@@ -188,6 +188,8 @@ alembic upgrade head
 
 Upload files are stored locally under `backend/uploads` by default. The directory is ignored by git.
 
+Upload pages include a `Replace files with the same name` option. When enabled, older active uploads with the same original filename and category are marked as `replaced`, and older BOM imports/reports tied to that upload are archived where supported.
+
 Project context is tracked in:
 
 ```text
@@ -313,6 +315,34 @@ GET  /api/v1/reports/{report_id}
 
 The frontend now shows live dashboard metrics, normalized BOM import status, saved ECO records, saved report history, report detail pages, report generation from a BOM import selector, automatic ECO PDF parsing after upload, and a dependency graph explorer.
 
+## Background Jobs
+
+Phase 13 adds persisted background jobs for workflows that can become slow with larger files.
+
+Endpoints:
+
+```text
+POST /api/v1/jobs/bom-imports/from-upload/{upload_id}
+POST /api/v1/jobs/eco-records/parse-upload/{upload_id}
+POST /api/v1/jobs/graph/build/{upload_id}
+POST /api/v1/jobs/reports/impact-report
+GET  /api/v1/jobs
+GET  /api/v1/jobs/{job_id}
+```
+
+Job statuses:
+
+- `queued`
+- `processing`
+- `completed`
+- `failed`
+
+The MVP worker uses FastAPI `BackgroundTasks`. Run migrations before using job endpoints:
+
+```bash
+npm run db:migrate
+```
+
 ## Root Scripts
 
 From the repository root:
@@ -325,5 +355,8 @@ npm run backend:dev
 npm run backend:test
 npm run db:up
 npm run db:migrate
+npm run db:reset-data
 npm run db:down
 ```
+
+`npm run db:reset-data` is a local development helper. It clears app database rows and stored upload files so you can start testing from a fresh state.

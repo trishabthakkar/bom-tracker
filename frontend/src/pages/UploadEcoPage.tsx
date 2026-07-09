@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, RefreshCw, Save } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { JobStatusPanel } from "@/components/jobs/JobStatusPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UploadPageShell } from "@/components/upload/UploadPageShell";
-import { getEcoRecords, saveEcoText, saveEcoUpload, type EcoRecord } from "@/lib/ecoRecordApi";
+import { getEcoRecords, saveEcoText, type EcoRecord } from "@/lib/ecoRecordApi";
+import { pollJobUntilFinished, startEcoUploadParseJob, type Job } from "@/lib/jobApi";
 import type { UploadedFile } from "@/lib/uploadApi";
 
 export function UploadEcoPage() {
@@ -14,6 +16,7 @@ export function UploadEcoPage() {
   const [records, setRecords] = useState<EcoRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -52,10 +55,17 @@ export function UploadEcoPage() {
     setSaving(true);
     setError(null);
     setMessage(null);
+    setJob(null);
 
     try {
-      const saved = await saveEcoUpload(upload.id);
-      setMessage(`Uploaded and saved ECO record #${saved.id}.`);
+      const queuedJob = await startEcoUploadParseJob(upload.id);
+      const finishedJob = await pollJobUntilFinished(queuedJob, setJob);
+
+      if (finishedJob.status === "failed") {
+        throw new Error(finishedJob.error_message ?? "Unable to parse ECO upload.");
+      }
+
+      setMessage(`Uploaded and saved ECO record #${finishedJob.result_json?.eco_record_id}.`);
       await refreshRecords();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to parse ECO upload.");
@@ -74,6 +84,8 @@ export function UploadEcoPage() {
         acceptedLabels={["PDF"]}
         onUploadComplete={handleUploadComplete}
       />
+
+      {saving || job ? <JobStatusPanel job={job} title="ECO parsing job" /> : null}
 
       <DashboardCard
         title="Parse ECO text"

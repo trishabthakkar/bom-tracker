@@ -21,10 +21,12 @@ export type UploadListResponse = {
 export function uploadFile({
   file,
   category,
+  replaceExisting = false,
   onProgress,
 }: {
   file: File;
   category: UploadCategory;
+  replaceExisting?: boolean;
   onProgress: (progress: number) => void;
 }): Promise<UploadedFile> {
   return new Promise((resolve, reject) => {
@@ -33,6 +35,7 @@ export function uploadFile({
 
     formData.append("file", file);
     formData.append("upload_category", category);
+    formData.append("replace_existing", String(replaceExisting));
 
     request.upload.onprogress = (event) => {
       if (event.lengthComputable) {

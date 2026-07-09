@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, FileSearch, RefreshCw, Wand2 } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { JobStatusPanel } from "@/components/jobs/JobStatusPanel";
 import { ReportSummaryCard } from "@/components/reports/ReportSummaryCard";
 import { Button } from "@/components/ui/button";
 import { getBomImports, type BomImport } from "@/lib/bomImportApi";
+import { pollJobUntilFinished, startImpactReportJob, type Job } from "@/lib/jobApi";
 import {
-  createImpactReport,
   getReports,
   type SavedImpactReport,
 } from "@/lib/reportApi";
@@ -19,6 +20,7 @@ export function ReportsPage() {
   );
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -44,13 +46,20 @@ export function ReportsPage() {
     setGenerating(true);
     setError(null);
     setMessage(null);
+    setJob(null);
 
     try {
-      const report = await createImpactReport({
+      const queuedJob = await startImpactReportJob({
         bomUploadId: Number(selectedUploadId),
         ecoText,
       });
-      setMessage(`Generated saved report #${report.id}.`);
+      const finishedJob = await pollJobUntilFinished(queuedJob, setJob);
+
+      if (finishedJob.status === "failed") {
+        throw new Error(finishedJob.error_message ?? "Unable to generate report.");
+      }
+
+      setMessage(`Generated saved report #${finishedJob.result_json?.report_id}.`);
       await refreshReports();
     } catch (reportError) {
       setError(reportError instanceof Error ? reportError.message : "Unable to generate report.");
@@ -116,6 +125,11 @@ export function ReportsPage() {
           <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
             {message}
           </p>
+        ) : null}
+        {generating || job ? (
+          <div className="mt-3">
+            <JobStatusPanel job={job} title="Impact report job" />
+          </div>
         ) : null}
         {error ? (
           <div

@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { JobStatusPanel } from "@/components/jobs/JobStatusPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UploadPageShell } from "@/components/upload/UploadPageShell";
 import {
+  getBomImport,
   getBomImports,
-  importBomUpload,
   type BomImport,
   type BomImportDetail,
 } from "@/lib/bomImportApi";
+import { pollJobUntilFinished, startBomImportJob, type Job } from "@/lib/jobApi";
 import type { UploadedFile } from "@/lib/uploadApi";
 
 export function UploadBomPage() {
@@ -17,6 +19,7 @@ export function UploadBomPage() {
   const [latestImport, setLatestImport] = useState<BomImportDetail | null>(null);
   const [loadingImports, setLoadingImports] = useState(true);
   const [importing, setImporting] = useState(false);
+  const [job, setJob] = useState<Job | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
   const refreshImports = useCallback(async () => {
@@ -37,10 +40,20 @@ export function UploadBomPage() {
   async function handleUploadComplete(upload: UploadedFile) {
     setImporting(true);
     setImportError(null);
+    setJob(null);
 
     try {
-      const imported = await importBomUpload(upload.id);
-      setLatestImport(imported);
+      const queuedJob = await startBomImportJob(upload.id);
+      const finishedJob = await pollJobUntilFinished(queuedJob, setJob);
+
+      if (finishedJob.status === "failed") {
+        throw new Error(finishedJob.error_message ?? "BOM import failed.");
+      }
+
+      const importId = Number(finishedJob.result_json?.bom_import_id);
+      if (importId) {
+        setLatestImport(await getBomImport(importId));
+      }
       await refreshImports();
     } catch (error) {
       setImportError(error instanceof Error ? error.message : "Unable to import BOM.");
@@ -60,11 +73,7 @@ export function UploadBomPage() {
         onUploadComplete={handleUploadComplete}
       />
 
-      {importing ? (
-        <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-          Importing BOM rows and dependency graph...
-        </div>
-      ) : null}
+      {importing || job ? <JobStatusPanel job={job} title="BOM import job" /> : null}
 
       {importError ? (
         <div

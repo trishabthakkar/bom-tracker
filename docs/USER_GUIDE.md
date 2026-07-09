@@ -217,10 +217,12 @@ Steps:
 
 1. Drag a BOM file into the upload area, or click to select a file.
 2. Confirm the selected filename appears.
-3. Click `Upload securely`.
-4. Watch the progress bar.
-5. After upload completes, the frontend automatically imports the BOM into normalized records.
-6. Review the latest normalized BOM summary and saved BOM imports list.
+3. Leave `Replace files with the same name` checked when the new file should become the active copy.
+4. Click `Upload securely`.
+5. Watch the progress bar.
+6. After upload completes, the frontend queues a background BOM import job.
+7. Watch the job status panel until the import completes or fails.
+8. Review the latest normalized BOM summary and saved BOM imports list.
 
 ### How It Works
 
@@ -234,6 +236,7 @@ The upload is sent as `multipart/form-data` with:
 
 - `file`
 - `upload_category=bom`
+- `replace_existing=true` when the replacement checkbox is enabled
 
 The backend:
 
@@ -243,6 +246,8 @@ The backend:
 - rejects empty files
 - generates a safe stored filename
 - saves the file under the backend upload directory
+- marks older uploads with the same filename and category as `replaced` when replacement is enabled
+- archives older BOM imports and reports connected to the replaced upload when possible
 - stores upload metadata in PostgreSQL
 
 The upload page also calls:
@@ -256,10 +261,16 @@ and filters the result to show BOM uploads.
 After upload, the page calls:
 
 ```text
-POST /api/v1/bom-imports/from-upload/{upload_id}
+POST /api/v1/jobs/bom-imports/from-upload/{upload_id}
 ```
 
-That persists:
+The job status is polled through:
+
+```text
+GET /api/v1/jobs/{job_id}
+```
+
+When the job completes, it persists:
 
 - normalized BOM import batch
 - normalized BOM part rows
@@ -283,9 +294,11 @@ Accepted files:
 Steps:
 
 1. Drag an ECO PDF into the upload area, or click to select it.
-2. Click `Upload securely`.
-3. The frontend automatically asks the backend to parse and save the uploaded ECO.
-4. Review the saved ECO record list below the upload area.
+2. Leave `Replace files with the same name` checked when the new PDF should become the active copy.
+3. Click `Upload securely`.
+4. The frontend queues a background ECO PDF parsing job.
+5. Watch the job status panel until parsing completes or fails.
+6. Review the saved ECO record list below the upload area.
 
 ### How It Works
 
@@ -298,10 +311,10 @@ upload_category=eco
 The upload is stored and tracked exactly like BOM files. After upload, the page calls:
 
 ```text
-POST /api/v1/eco-records/parse-upload/{upload_id}
+POST /api/v1/jobs/eco-records/parse-upload/{upload_id}
 ```
 
-That extracts text from the PDF, parses structured ECO fields, and persists the ECO record.
+That queues a background job. The job extracts text from the PDF, parses structured ECO fields, and persists the ECO record.
 
 The page also includes a plain-text ECO parser. Paste or edit ECO text and click `Save parsed ECO` to persist extracted fields.
 
@@ -331,6 +344,8 @@ GET /api/v1/uploads
 ```
 
 Only files owned by the current authenticated user are returned.
+
+Uploads marked `replaced` are hidden from normal upload history and downstream selectors so duplicate filenames do not clutter active workflows.
 
 ## BOM Parser
 
@@ -575,7 +590,18 @@ Steps:
 3. Select the normalized BOM import.
 4. Enter ECO text.
 5. Click `Generate`.
-6. Open the saved report from the list.
+6. Watch the impact report job status panel.
+7. Open the saved report from the list after the job completes.
+
+### How It Works
+
+Report generation is queued through:
+
+```text
+POST /api/v1/jobs/reports/impact-report
+```
+
+The frontend polls job status until the report is generated or a failure message is available.
 
 ## Dependency Graph Page
 
@@ -588,6 +614,44 @@ Open:
 ```
 
 The page shows real graph data from the backend. It is currently optimized for inspection through metrics, lookup results, and an edge table. A future phase can add an interactive visual node-link graph.
+
+Manual graph builds are queued through:
+
+```text
+POST /api/v1/jobs/graph/build/{upload_id}
+```
+
+After the graph build job completes, the page refreshes graph statistics, edge data, and lookup tools.
+
+## Background Jobs
+
+### How To Use It
+
+You do not need to open a separate page for jobs. Job status panels appear inside workflows that may take longer:
+
+- BOM import after upload
+- ECO PDF parsing after upload
+- dependency graph build
+- impact report generation
+
+Each panel shows:
+
+- job id
+- status
+- progress bar
+- status message
+- failure message if something goes wrong
+
+### How It Works
+
+The backend stores jobs in the `jobs` table with these statuses:
+
+- `queued`
+- `processing`
+- `completed`
+- `failed`
+
+The MVP worker uses FastAPI `BackgroundTasks`. This keeps long-running work out of the initial API response while avoiding a separate worker dependency during local development.
 
 ## History Page
 
@@ -771,8 +835,8 @@ Both are allowed by backend CORS config.
 - Dependency graph data is shown through metrics, lookup lists, and edge tables, not a full interactive graph canvas yet.
 - No external LLM provider is connected yet.
 - No PDF export, report sharing, approval workflow, or team permissions yet.
-- Long-running parsing and report generation still run in request-response paths.
+- Background jobs use FastAPI in-process workers for MVP; a production queue such as Celery, RQ, or Arq is not connected yet.
 
 ## Recommended Next Phases
 
-Phase 13 should add a background jobs and processing pipeline so larger files and longer analyses can run safely with visible progress and retry states.
+Phase 14 should harden security with CSRF protection, rate limiting, password recovery, audit logs, stronger upload scanning, and role-based access control.

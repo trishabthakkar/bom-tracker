@@ -13,6 +13,7 @@
     "backend:test": "backend/.venv/bin/pytest",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
-    "db:migrate": "cd backend && .venv/bin/alembic upgrade head"
+    "db:migrate": "cd backend && .venv/bin/alembic upgrade head",
+    "db:reset-data": "cd backend && .venv/bin/python -m app.scripts.reset_dev_data"
   }
 }

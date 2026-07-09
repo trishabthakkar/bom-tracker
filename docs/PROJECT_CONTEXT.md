@@ -170,6 +170,20 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 - Standardized new local uploads to save under `backend/uploads` when `UPLOAD_DIRECTORY=uploads`.
 - Added parser-level missing-file handling so graph, BOM, ECO, and report workflows return useful API errors instead of unhandled `FileNotFoundError` exceptions.
 - Added unit coverage for upload directory and legacy relative path resolution.
+- Added an upload replacement option that marks older same-name uploads as `replaced` and archives older BOM imports/reports when possible.
+- Added `npm run db:reset-data` for local development resets of app rows and stored upload files.
+
+### Phase 13 - Background Jobs and Processing Pipeline
+
+- Added persisted `jobs` table with queued, processing, completed, and failed statuses.
+- Added Alembic migration `20260709_0004_create_jobs.py`.
+- Added protected job APIs for BOM import, ECO PDF parsing, graph build, and impact report generation.
+- Implemented FastAPI `BackgroundTasks` workers for MVP async processing.
+- Added job progress, status messages, result metadata, failure messages, and job history endpoints.
+- Connected Upload BOM, Upload ECO, Reports, and Dependency Graph frontend workflows to background jobs.
+- Added reusable frontend job API client and job status/progress panel.
+- Kept existing synchronous APIs available for compatibility and direct testing.
+- Added backend unit coverage for job persistence and upload replacement behavior.
 
 ## Backend Endpoints
 
@@ -206,6 +220,12 @@ Protected:
 - `GET /api/v1/reports`
 - `GET /api/v1/reports/{report_id}`
 - `DELETE /api/v1/reports/{report_id}`
+- `POST /api/v1/jobs/bom-imports/from-upload/{upload_id}`
+- `POST /api/v1/jobs/eco-records/parse-upload/{upload_id}`
+- `POST /api/v1/jobs/graph/build/{upload_id}`
+- `POST /api/v1/jobs/reports/impact-report`
+- `GET /api/v1/jobs`
+- `GET /api/v1/jobs/{job_id}`
 
 Authentication is also available under `/api/v1` through the API router for compatibility.
 
@@ -387,30 +407,12 @@ Persistence behavior:
 - Exact downstream document section matching.
 - External AI/LLM provider integration.
 - Visual frontend dependency graph rendering.
-- Background job processing for long-running parsing and report generation.
+- Durable external worker queue such as Celery/RQ/Arq.
 - Server-side token revocation.
 - Virus scanning.
 - Object storage such as S3.
 
 ## Remaining Implementation Roadmap
-
-### Phase 13 - Background Jobs and Processing Pipeline
-
-Goal: support larger files and longer-running parsing/analysis safely.
-
-Tasks:
-
-- Add job model for upload parsing, graph construction, ECO parsing, and report generation.
-- Add job statuses: queued, processing, completed, failed.
-- Add background worker approach such as Celery/RQ/Arq/FastAPI background tasks for MVP.
-- Add job status endpoints.
-- Add retry and failure metadata.
-- Move heavy parsing/report generation out of request-response paths.
-
-Definition of done:
-
-- Large uploads do not block API requests.
-- Users can see processing progress and failure reasons.
 
 ### Phase 14 - Security Hardening
 
@@ -543,4 +545,4 @@ Definition of done:
 
 ## Recommended Next Phase
 
-Proceed with Phase 13: Background Jobs and Processing Pipeline.
+Proceed with Phase 14: Security Hardening.

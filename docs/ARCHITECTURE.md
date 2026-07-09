@@ -23,6 +23,7 @@ frontend/src/
   auth/              authentication state, protected/public route guards
   components/
     dashboard/       dashboard cards and sections
+    jobs/            reusable job status/progress components
     layout/          sidebar, navbar, footer, layout shell
     reports/         persisted report cards and risk display helpers
     ui/              reusable shadcn-style primitives
@@ -38,7 +39,7 @@ Key frontend decisions:
 - `AuthProvider` recovers session state from `/me`.
 - JWTs are not stored in JavaScript; auth relies on the backend HttpOnly cookie.
 - Uploads use `XMLHttpRequest` because browser `fetch` does not expose upload progress events.
-- Domain-specific API clients live in `lib/` and cover auth, uploads, BOM imports, ECO records, graph analysis, and reports.
+- Domain-specific API clients live in `lib/` and cover auth, uploads, jobs, BOM imports, ECO records, graph analysis, and reports.
 - Dashboard and workflow pages load authenticated backend data directly instead of relying on static placeholders.
 
 ## Backend Architecture
@@ -65,6 +66,19 @@ Key backend decisions:
 - SQLAlchemy models define persistence.
 - Alembic owns schema migrations.
 - Upload storage is local for MVP development and ignored by git.
+
+## Background Job Flow
+
+1. Frontend starts a job through `/api/v1/jobs/*`.
+2. API validates authentication, upload ownership, and basic request shape.
+3. API creates a `jobs` row with `queued` status and returns `202 Accepted`.
+4. FastAPI `BackgroundTasks` runs the worker in-process for the MVP.
+5. Worker opens its own database session and marks the job `processing`.
+6. Worker calls the existing business service for BOM import, ECO PDF parsing, graph build, or report generation.
+7. Worker stores result metadata or failure details and marks the job `completed` or `failed`.
+8. Frontend polls `GET /api/v1/jobs/{job_id}` and displays progress/failure state.
+
+This is intentionally compatible with the existing synchronous endpoints. A future production queue can replace the in-process worker while keeping the job API contract.
 
 ## Auth Flow
 
@@ -100,19 +114,19 @@ Key backend decisions:
 ## BOM Import Persistence Flow
 
 1. User uploads a BOM.
-2. Frontend calls `/api/v1/bom-imports/from-upload/{upload_id}`.
-3. `services/bom_importer.py` parses the uploaded file.
-4. The service persists:
+2. Frontend calls `/api/v1/jobs/bom-imports/from-upload/{upload_id}`.
+3. A background job calls `services/bom_importer.py`.
+4. The service parses the uploaded file and persists:
    - BOM import batch
    - normalized BOM part rows
    - assembly relationships
    - dependency graph snapshot
-5. Frontend shows import status and a parsed row preview.
+5. Frontend polls job status, then refreshes import status and parsed row preview.
 
 ## Dependency Graph Flow
 
 1. User selects a normalized BOM import on the Dependency Graph page.
-2. Frontend calls graph API endpoints with the import's source upload id.
+2. Frontend can queue a graph build job through `/api/v1/jobs/graph/build/{upload_id}`.
 3. API loads the uploaded BOM.
 4. BOM parser returns structured rows.
 5. `services/dependency_graph.py` builds a NetworkX directed graph.
@@ -120,8 +134,9 @@ Key backend decisions:
    - parent assembly to child assembly
    - child assembly to part number
    - fallback parent assembly to part number
-7. API returns graph nodes, edges, parents, children, paths, or statistics.
-8. Frontend renders graph statistics, part lookup results, and edge tables.
+7. Job completion stores graph result metadata.
+8. Frontend refreshes graph API endpoints for nodes, edges, parents, children, paths, or statistics.
+9. Frontend renders graph statistics, part lookup results, and edge tables.
 
 ## ECO Parsing Flow
 
@@ -133,9 +148,10 @@ Key backend decisions:
 ## ECO Record Persistence Flow
 
 1. User enters ECO text or uploads an ECO PDF.
-2. API parses the change using `EngineeringChangeParser`.
-3. `/api/v1/eco-records/*` endpoints persist parsed fields.
-4. Frontend shows saved ECO records for later workflows.
+2. Plain text can be parsed synchronously; uploaded PDFs are queued through `/api/v1/jobs/eco-records/parse-upload/{upload_id}`.
+3. Background worker extracts PDF text and parses the change using `EngineeringChangeParser`.
+4. `/api/v1/eco-records/*` workflows persist parsed fields.
+5. Frontend shows saved ECO records for later workflows.
 
 ## Intelligence Flow
 
@@ -152,12 +168,13 @@ Key backend decisions:
 
 ## Report Persistence Flow
 
-1. Frontend calls `/api/v1/reports/impact-report`.
-2. Backend reuses or creates a normalized BOM import.
-3. Backend parses and saves the ECO record.
+1. Frontend calls `/api/v1/jobs/reports/impact-report`.
+2. Background worker reuses or creates a normalized BOM import.
+3. Worker parses and saves the ECO record.
 4. `services/intelligence_layer.py` generates the structured report.
 5. `services/report_persistence.py` stores report metadata and full structured JSON.
-6. Frontend lists saved reports and renders report detail pages.
+6. Job result metadata includes the saved report id.
+7. Frontend refreshes saved reports and renders report detail pages.
 
 ## Logging and Errors
 

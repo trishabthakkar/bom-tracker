@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, GitBranch, RefreshCw, Search } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { JobStatusPanel } from "@/components/jobs/JobStatusPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getBomImports, type BomImport } from "@/lib/bomImportApi";
@@ -12,6 +13,7 @@ import {
   type GraphBuild,
   type GraphStats,
 } from "@/lib/graphApi";
+import { pollJobUntilFinished, startGraphBuildJob, type Job } from "@/lib/jobApi";
 
 export function DependencyGraphPage() {
   const [bomImports, setBomImports] = useState<BomImport[]>([]);
@@ -23,6 +25,7 @@ export function DependencyGraphPage() {
   const [children, setChildren] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [querying, setQuerying] = useState(false);
+  const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadImports = useCallback(async () => {
@@ -60,7 +63,15 @@ export function DependencyGraphPage() {
 
     setLoading(true);
     setError(null);
+    setJob(null);
     try {
+      const queuedJob = await startGraphBuildJob(Number(selectedUploadId));
+      const finishedJob = await pollJobUntilFinished(queuedJob, setJob);
+
+      if (finishedJob.status === "failed") {
+        throw new Error(finishedJob.error_message ?? "Unable to build graph.");
+      }
+
       const [graphBuild, graphStats] = await Promise.all([
         buildGraph(Number(selectedUploadId)),
         getGraphStats(Number(selectedUploadId)),
@@ -149,6 +160,8 @@ export function DependencyGraphPage() {
           </Button>
         </div>
       </DashboardCard>
+
+      {loading || job ? <JobStatusPanel job={job} title="Graph build job" /> : null}
 
       {stats ? (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">

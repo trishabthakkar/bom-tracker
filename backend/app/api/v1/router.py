@@ -9,6 +9,7 @@ from app.api.v1 import (
     graph,
     health,
     intelligence,
+    jobs,
     reports,
     uploads,
 )
@@ -24,3 +25,4 @@ api_router.include_router(eco.router)
 api_router.include_router(eco_records.router)
 api_router.include_router(intelligence.router)
 api_router.include_router(reports.router)
+api_router.include_router(jobs.router)

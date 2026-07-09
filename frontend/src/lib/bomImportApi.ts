@@ -58,3 +58,15 @@ export async function getBomImports(): Promise<BomImport[]> {
   const payload = (await response.json()) as { imports: BomImport[] };
   return payload.imports;
 }
+
+export async function getBomImport(importId: number): Promise<BomImportDetail> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/bom-imports/${importId}`, {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiErrorMessage(response, "Unable to load BOM import."));
+  }
+
+  return response.json() as Promise<BomImportDetail>;
+}
