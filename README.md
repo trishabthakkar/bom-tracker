@@ -41,7 +41,9 @@ bom-tracker/
 │   └── .env.example
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── PRODUCTION.md
 │   └── PROJECT_CONTEXT.md
+├── docker-compose.prod.yml
 ├── .gitignore
 ├── package.json
 └── README.md
@@ -414,6 +416,41 @@ The MVP worker uses FastAPI `BackgroundTasks`. Run migrations before using job e
 npm run db:migrate
 ```
 
+## Production Infrastructure
+
+Phase 19 adds deployable container infrastructure:
+
+- `backend/Dockerfile`
+- `frontend/Dockerfile`
+- `frontend/nginx.conf`
+- `docker-compose.prod.yml`
+- `.env.production.example`
+- `.github/workflows/ci.yml`
+- `docs/PRODUCTION.md`
+
+Create production environment configuration:
+
+```bash
+cp .env.production.example .env.production
+```
+
+Set strong values for `POSTGRES_PASSWORD`, `JWT_SECRET_KEY`, and `BACKEND_CORS_ORIGINS`.
+
+Build and run production services:
+
+```bash
+npm run prod:build
+npm run prod:up
+```
+
+Readiness endpoint:
+
+```text
+GET /api/v1/ready
+```
+
+See `docs/PRODUCTION.md` for deployment, health checks, backups, restore steps, and security notes.
+
 ## Root Scripts
 
 From the repository root:
@@ -428,6 +465,10 @@ npm run db:up
 npm run db:migrate
 npm run db:reset-data
 npm run db:down
+npm run prod:build
+npm run prod:up
+npm run prod:logs
+npm run prod:down
 ```
 
 `npm run db:reset-data` is a local development helper. It clears app database rows and stored upload files so you can start testing from a fresh state.

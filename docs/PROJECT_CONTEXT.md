@@ -269,6 +269,23 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 - Added Alembic migration `20260709_0007_report_collaboration_exports.py`.
 - Added backend unit coverage for approved-ECO report generation, comments, review sign-off, and exports.
 
+### Phase 19 - Production Infrastructure
+
+- Added backend Dockerfile for FastAPI runtime.
+- Added frontend Dockerfile and nginx config for serving the React build and proxying API/auth routes.
+- Added production Compose file with Postgres, migration runner, backend, frontend, health checks, and persistent volumes.
+- Added `.env.production.example`.
+- Added `.dockerignore`.
+- Added `/api/v1/ready` readiness endpoint with database connectivity check.
+- Added GitHub Actions CI workflow for backend compile/tests, Alembic migration validation, frontend lint, and frontend build.
+- Added production operations guide in `docs/PRODUCTION.md`.
+- Added production npm scripts:
+  - `npm run prod:build`
+  - `npm run prod:up`
+  - `npm run prod:down`
+  - `npm run prod:logs`
+- Documented backup, restore, deployment, security, and operational limits.
+
 ## Backend Endpoints
 
 Public:
@@ -277,6 +294,7 @@ Public:
 - `POST /login`
 - `POST /logout`
 - `GET /api/v1/health`
+- `GET /api/v1/ready`
 
 Protected:
 
@@ -577,27 +595,6 @@ Current limitation:
 
 ## Remaining Implementation Roadmap
 
-### Phase 19 - Production Infrastructure
-
-Goal: make the system deployable and maintainable.
-
-Tasks:
-
-- Add Dockerfiles for frontend and backend.
-- Add docker-compose for local full-stack development.
-- Add PostgreSQL production setup.
-- Add deployment configuration.
-- Add CI pipeline for lint, tests, build, and migrations.
-- Add structured logging and error monitoring integration.
-- Add health and readiness endpoints.
-- Add backup and retention strategy for database and uploaded files.
-- Add environment-specific configuration documentation.
-
-Definition of done:
-
-- A new developer can run the full app locally.
-- The app can be deployed with documented production settings.
-
 ### Phase 20 - End-to-End QA and Release Readiness
 
 Goal: validate the complete application workflow.
@@ -617,4 +614,4 @@ Definition of done:
 
 ## Recommended Next Phase
 
-Proceed with Phase 19: Production Infrastructure.
+Proceed with Phase 20: End-to-End QA and Release Readiness.

@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 node_modules/
 dist/
@@ -18,3 +19,4 @@ __pycache__/
 *.sqlite
 *.sqlite3
 uploads/
+backups/

@@ -1068,4 +1068,4 @@ Both are allowed by backend CORS config.
 
 ## Recommended Next Phases
 
-Phase 19 should add production infrastructure: Dockerfiles, full-stack compose setup, CI checks, deployment configuration, readiness checks, monitoring, backup strategy, and environment documentation.
+Phase 20 should add end-to-end QA and release readiness: browser workflow tests, realistic fixtures, performance checks, accessibility audit, security checklist, and pilot release checklist.
