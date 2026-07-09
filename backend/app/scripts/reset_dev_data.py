@@ -8,7 +8,7 @@ from app.models.document import DocumentSection, EngineeringDocument
 from app.models.eco import EcoRecord
 from app.models.graph_snapshot import GraphSnapshot
 from app.models.job import Job
-from app.models.report import ImpactReport
+from app.models.report import ImpactReport, ReportComment
 from app.models.upload import UploadedFile
 from app.models.user import User
 from app.services.file_storage import PROJECT_ROOT, get_upload_directory
@@ -16,6 +16,7 @@ from app.services.file_storage import PROJECT_ROOT, get_upload_directory
 
 MODELS_IN_DELETE_ORDER = [
     Job,
+    ReportComment,
     ImpactReport,
     GraphSnapshot,
     DocumentSection,

@@ -14,9 +14,23 @@ export type SavedImpactReport = {
   risk_level: string;
   risk_score: number;
   status: string;
+  review_status: string;
+  owner_user_id: number | null;
+  assigned_user_id: number | null;
+  signoff_notes: string | null;
+  reviewed_at: string | null;
+  signed_off_at: string | null;
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+};
+
+export type ReportComment = {
+  id: number;
+  report_id: number;
+  user_id: number;
+  body: string;
+  created_at: string;
 };
 
 export type SavedImpactReportDetail = SavedImpactReport & {
@@ -66,6 +80,7 @@ export type SavedImpactReportDetail = SavedImpactReport & {
       reasons: string[];
     };
   };
+  comments: ReportComment[];
 };
 
 export async function getReports(): Promise<SavedImpactReport[]> {
@@ -96,9 +111,11 @@ export async function getReport(reportId: string): Promise<SavedImpactReportDeta
 export async function createImpactReport({
   bomUploadId,
   ecoText,
+  ecoRecordId,
 }: {
   bomUploadId: number;
-  ecoText: string;
+  ecoText?: string;
+  ecoRecordId?: number;
 }): Promise<SavedImpactReportDetail> {
   const response = await fetch(`${API_BASE_URL}/api/v1/reports/impact-report`, {
     method: "POST",
@@ -110,6 +127,7 @@ export async function createImpactReport({
     body: JSON.stringify({
       bom_upload_id: bomUploadId,
       eco_text: ecoText,
+      eco_record_id: ecoRecordId,
     }),
   });
 
@@ -118,4 +136,58 @@ export async function createImpactReport({
   }
 
   return response.json() as Promise<SavedImpactReportDetail>;
+}
+
+export async function updateReportReview({
+  reportId,
+  reviewStatus,
+  assignedUserId,
+  signoffNotes,
+}: {
+  reportId: number;
+  reviewStatus: string;
+  assignedUserId?: number | null;
+  signoffNotes?: string | null;
+}): Promise<SavedImpactReportDetail> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/reports/${reportId}/review`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...csrfHeader(),
+    },
+    body: JSON.stringify({
+      review_status: reviewStatus,
+      assigned_user_id: assignedUserId ?? null,
+      signoff_notes: signoffNotes ?? null,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiErrorMessage(response, "Unable to update report review status."));
+  }
+
+  return response.json() as Promise<SavedImpactReportDetail>;
+}
+
+export async function addReportComment(reportId: number, body: string): Promise<ReportComment> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/reports/${reportId}/comments`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...csrfHeader(),
+    },
+    body: JSON.stringify({ body }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await getApiErrorMessage(response, "Unable to add report comment."));
+  }
+
+  return response.json() as Promise<ReportComment>;
+}
+
+export function reportExportUrl(reportId: number, format: "csv" | "pdf") {
+  return `${API_BASE_URL}/api/v1/reports/${reportId}/export.${format}`;
 }

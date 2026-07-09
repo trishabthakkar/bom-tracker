@@ -19,6 +19,9 @@ Current MVP capabilities:
 - Affected document section matching inside saved impact reports.
 - BOM version comparison for added, removed, revised, and likely replaced parts.
 - ECO correction, review, approval, and rejection workflow states.
+- Impact report CSV/PDF export.
+- Impact report comments, review status, and sign-off tracking.
+- Report generation from approved ECO records.
 - Engineering dashboard with real upload, report, import, and ECO activity data.
 - Frontend report generation, ECO upload parsing, and dependency graph exploration.
 
@@ -761,18 +764,34 @@ Open:
 The page supports:
 
 - generating a saved impact report from a selected normalized BOM import and ECO text
+- generating a saved impact report from a selected approved ECO record
 - listing saved reports
 - opening report detail pages
+- exporting reports to CSV or PDF
+- adding report comments
+- setting report review status and sign-off notes
 
 Steps:
 
 1. Upload and import a BOM.
-2. Open Reports.
-3. Select the normalized BOM import.
-4. Enter ECO text.
-5. Click `Generate`.
-6. Watch the impact report job status panel.
-7. Open the saved report from the list after the job completes.
+2. Optionally create, review, and approve an ECO record.
+3. Open Reports.
+4. Select the normalized BOM import.
+5. Select `Paste text` or `Approved ECO`.
+6. Enter ECO text or select an approved ECO record.
+7. Click `Generate`.
+8. Watch the impact report job status panel.
+9. Open the saved report from the list after the job completes.
+
+On the report detail page, you can:
+
+- download CSV export
+- download PDF export
+- set review status to `draft`, `in_review`, `changes_requested`, or `signed_off`
+- add sign-off notes
+- add comments
+
+Only approved ECO records are accepted when using an ECO record as the report source.
 
 ### How It Works
 
@@ -782,7 +801,34 @@ Report generation is queued through:
 POST /api/v1/jobs/reports/impact-report
 ```
 
+The job request can contain either pasted ECO text:
+
+```json
+{
+  "bom_upload_id": 1,
+  "eco_text": "Replace old part PN-1212 with new part PN-2212."
+}
+```
+
+or an approved ECO record:
+
+```json
+{
+  "bom_upload_id": 1,
+  "eco_record_id": 7
+}
+```
+
 The frontend polls job status until the report is generated or a failure message is available.
+
+Review and export endpoints:
+
+```text
+PATCH /api/v1/reports/{report_id}/review
+POST  /api/v1/reports/{report_id}/comments
+GET   /api/v1/reports/{report_id}/export.csv
+GET   /api/v1/reports/{report_id}/export.pdf
+```
 
 ## Dependency Graph Page
 
@@ -1015,12 +1061,11 @@ Both are allowed by backend CORS config.
 
 - Dependency graph data is shown through metrics, lookup lists, and edge tables, not a full interactive graph canvas yet.
 - Document intelligence uses PDF text extraction and part-number matching, not semantic LLM review.
-- Report generation still accepts raw ECO text directly; a later phase should generate reports from selected approved ECO records.
 - BOM replacement candidates are heuristic suggestions, not approved engineering decisions.
-- No PDF export, report sharing, report approval workflow, or team permissions yet.
+- Report collaboration is single-user scoped; team permissions and external share links are not implemented yet.
 - Background jobs use FastAPI in-process workers for MVP; a production queue such as Celery, RQ, or Arq is not connected yet.
 - Password reset, email verification, server-side token revocation, RBAC, and virus scanning are not implemented yet.
 
 ## Recommended Next Phases
 
-Phase 18 should add reporting, export, and collaboration: PDF/CSV export, report sharing, comments, review workflow, report versioning, sign-off statuses, and ownership.
+Phase 19 should add production infrastructure: Dockerfiles, full-stack compose setup, CI checks, deployment configuration, readiness checks, monitoring, backup strategy, and environment documentation.

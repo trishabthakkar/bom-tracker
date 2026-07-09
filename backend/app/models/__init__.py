@@ -4,7 +4,7 @@ from app.models.document import DocumentSection, EngineeringDocument
 from app.models.eco import EcoRecord
 from app.models.graph_snapshot import GraphSnapshot
 from app.models.job import Job
-from app.models.report import ImpactReport
+from app.models.report import ImpactReport, ReportComment
 from app.models.upload import UploadedFile
 from app.models.user import User
 
@@ -18,6 +18,7 @@ __all__ = [
     "GraphSnapshot",
     "ImpactReport",
     "Job",
+    "ReportComment",
     "UploadedFile",
     "User",
 ]

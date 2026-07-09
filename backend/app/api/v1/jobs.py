@@ -123,6 +123,7 @@ def create_impact_report_job(
         input_json={
             "bom_upload_id": upload.id,
             "eco_text": payload.eco_text,
+            "eco_record_id": payload.eco_record_id,
         },
         status_message="Impact report generation queued.",
     )

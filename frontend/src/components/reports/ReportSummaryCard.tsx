@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RiskBadge } from "@/components/reports/RiskBadge";
 import type { SavedImpactReport } from "@/lib/reportApi";
@@ -17,6 +18,9 @@ export function ReportSummaryCard({ report }: ReportSummaryCardProps) {
       action={<RiskBadge level={report.risk_level} />}
     >
       <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">{report.review_status.replace(/_/g, " ")}</Badge>
+        </div>
         <p className="text-sm text-muted-foreground">{report.summary}</p>
         <div className="grid gap-3 text-sm sm:grid-cols-3">
           <div>

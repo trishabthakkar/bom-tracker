@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
+from app.models.eco import EcoRecord
 from app.models.job import Job
 from app.models.upload import UploadedFile
 from app.services.bom_importer import BomImportError, import_bom_upload
@@ -19,6 +20,7 @@ from app.services.eco_records import EcoRecordError, parse_upload_and_create_eco
 from app.services.report_persistence import (
     ReportPersistenceError,
     generate_and_save_impact_report,
+    generate_and_save_impact_report_from_eco_record,
 )
 
 JOB_STATUS_QUEUED = "queued"
@@ -241,12 +243,24 @@ def _handle_impact_report(db: Session, job: Job) -> dict[str, Any]:
     )
 
     try:
-        report = generate_and_save_impact_report(
-            db=db,
-            bom_upload=upload,
-            eco_text=str(job.input_json["eco_text"]),
-            user_id=job.user_id,
-        )
+        eco_record_id = job.input_json.get("eco_record_id")
+        if eco_record_id:
+            eco_record = db.get(EcoRecord, int(eco_record_id))
+            if eco_record is None or eco_record.user_id != job.user_id:
+                raise JobError("ECO record was not found.")
+            report = generate_and_save_impact_report_from_eco_record(
+                db=db,
+                bom_upload=upload,
+                eco_record=eco_record,
+                user_id=job.user_id,
+            )
+        else:
+            report = generate_and_save_impact_report(
+                db=db,
+                bom_upload=upload,
+                eco_text=str(job.input_json["eco_text"]),
+                user_id=job.user_id,
+            )
     except ReportPersistenceError as error:
         raise JobError(str(error)) from error
 

@@ -5,6 +5,7 @@ import { JobStatusPanel } from "@/components/jobs/JobStatusPanel";
 import { ReportSummaryCard } from "@/components/reports/ReportSummaryCard";
 import { Button } from "@/components/ui/button";
 import { getBomImports, type BomImport } from "@/lib/bomImportApi";
+import { getEcoRecords, type EcoRecord } from "@/lib/ecoRecordApi";
 import { pollJobUntilFinished, startImpactReportJob, type Job } from "@/lib/jobApi";
 import {
   getReports,
@@ -14,7 +15,10 @@ import {
 export function ReportsPage() {
   const [reports, setReports] = useState<SavedImpactReport[]>([]);
   const [bomImports, setBomImports] = useState<BomImport[]>([]);
+  const [ecoRecords, setEcoRecords] = useState<EcoRecord[]>([]);
   const [selectedUploadId, setSelectedUploadId] = useState("");
+  const [ecoSourceMode, setEcoSourceMode] = useState<"text" | "record">("text");
+  const [selectedEcoRecordId, setSelectedEcoRecordId] = useState("");
   const [ecoText, setEcoText] = useState(
     "Replace old part PN-1212 with new part PN-2212. Reason: supplier obsolescence. Effective date: 2026-08-15.",
   );
@@ -27,10 +31,20 @@ export function ReportsPage() {
   const refreshReports = useCallback(async () => {
     setLoading(true);
     try {
-      const [savedReports, savedImports] = await Promise.all([getReports(), getBomImports()]);
+      const [savedReports, savedImports, savedEcoRecords] = await Promise.all([
+        getReports(),
+        getBomImports(),
+        getEcoRecords(),
+      ]);
       setReports(savedReports);
       setBomImports(savedImports);
+      setEcoRecords(savedEcoRecords);
       setSelectedUploadId((current) => current || String(savedImports[0]?.upload_id ?? ""));
+      setSelectedEcoRecordId(
+        (current) =>
+          current ||
+          String(savedEcoRecords.find((record) => record.workflow_status === "approved")?.id ?? ""),
+      );
     } catch (reportError) {
       setError(reportError instanceof Error ? reportError.message : "Unable to load reports.");
     } finally {
@@ -51,7 +65,8 @@ export function ReportsPage() {
     try {
       const queuedJob = await startImpactReportJob({
         bomUploadId: Number(selectedUploadId),
-        ecoText,
+        ecoText: ecoSourceMode === "text" ? ecoText : undefined,
+        ecoRecordId: ecoSourceMode === "record" ? Number(selectedEcoRecordId) : undefined,
       });
       const finishedJob = await pollJobUntilFinished(queuedJob, setJob);
 
@@ -86,9 +101,9 @@ export function ReportsPage() {
 
       <DashboardCard
         title="Generate saved impact report"
-        description="Use an uploaded BOM id and ECO text to generate a persisted report."
+        description="Use a normalized BOM and either ECO text or an approved ECO record."
       >
-        <div className="grid gap-4 lg:grid-cols-[280px_1fr_auto] lg:items-end">
+        <div className="grid gap-4 lg:grid-cols-[280px_220px_1fr_auto] lg:items-end">
           <label className="space-y-2 text-sm">
             <span className="font-medium">Normalized BOM</span>
             <select
@@ -105,16 +120,52 @@ export function ReportsPage() {
             </select>
           </label>
           <label className="space-y-2 text-sm">
-            <span className="font-medium">ECO text</span>
-            <textarea
-              className="min-h-24 w-full rounded-md border bg-background p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              value={ecoText}
-              onChange={(event) => setEcoText(event.target.value)}
-            />
+            <span className="font-medium">ECO source</span>
+            <select
+              className="h-10 w-full rounded-md border bg-background px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={ecoSourceMode}
+              onChange={(event) => setEcoSourceMode(event.target.value as "text" | "record")}
+            >
+              <option value="text">Paste text</option>
+              <option value="record">Approved ECO</option>
+            </select>
           </label>
+          {ecoSourceMode === "record" ? (
+            <label className="space-y-2 text-sm">
+              <span className="font-medium">Approved ECO record</span>
+              <select
+                className="h-10 w-full rounded-md border bg-background px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={selectedEcoRecordId}
+                onChange={(event) => setSelectedEcoRecordId(event.target.value)}
+              >
+                <option value="">Select approved ECO</option>
+                {ecoRecords
+                  .filter((record) => record.workflow_status === "approved")
+                  .map((record) => (
+                    <option key={record.id} value={record.id}>
+                      #{record.id} {record.old_part ?? "-"} to {record.new_part ?? "-"}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          ) : (
+            <label className="space-y-2 text-sm">
+              <span className="font-medium">ECO text</span>
+              <textarea
+                className="min-h-24 w-full rounded-md border bg-background p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={ecoText}
+                onChange={(event) => setEcoText(event.target.value)}
+              />
+            </label>
+          )}
           <Button
             type="button"
-            disabled={generating || !Number(selectedUploadId) || ecoText.trim().length === 0}
+            disabled={
+              generating ||
+              !Number(selectedUploadId) ||
+              (ecoSourceMode === "text" && ecoText.trim().length === 0) ||
+              (ecoSourceMode === "record" && !Number(selectedEcoRecordId))
+            }
             onClick={handleGenerateReport}
           >
             <Wand2 className="h-4 w-4" />

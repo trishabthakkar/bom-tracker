@@ -16,7 +16,7 @@ from app.services.bom_importer import (
 )
 from app.services.dependency_graph import build_dependency_graph
 from app.services.documents import find_sections_referencing_parts
-from app.services.eco_records import create_eco_record
+from app.services.eco_records import create_eco_record, eco_record_to_parsed_change
 from app.services.eco_parser import EngineeringChangeParser
 from app.services.intelligence_layer import IntelligenceLayer
 from app.services.bom_parser import BomParserError, parse_bom_file
@@ -31,6 +31,59 @@ def generate_and_save_impact_report(
     db: Session,
     bom_upload: UploadedFile,
     eco_text: str,
+    user_id: int,
+) -> ImpactReport:
+    if bom_upload.uploader_id != user_id:
+        raise ReportPersistenceError("Uploaded BOM file was not found.")
+
+    if bom_upload.file_extension not in {".csv", ".xlsx"}:
+        raise ReportPersistenceError("Only CSV and XLSX uploads can be used for impact reports.")
+
+    parsed_eco = EngineeringChangeParser().parse_text(eco_text)
+    eco_record = create_eco_record(
+        db=db,
+        parsed=parsed_eco,
+        user_id=user_id,
+        source_type="text",
+        source_text=eco_text,
+    )
+    return _generate_and_save_from_parsed_eco(
+        db=db,
+        bom_upload=bom_upload,
+        parsed_eco=parsed_eco,
+        eco_record=eco_record,
+        user_id=user_id,
+    )
+
+
+def generate_and_save_impact_report_from_eco_record(
+    *,
+    db: Session,
+    bom_upload: UploadedFile,
+    eco_record: EcoRecord,
+    user_id: int,
+) -> ImpactReport:
+    if eco_record.user_id != user_id:
+        raise ReportPersistenceError("ECO record was not found.")
+
+    if eco_record.workflow_status != "approved":
+        raise ReportPersistenceError("Only approved ECO records can be used for report generation.")
+
+    return _generate_and_save_from_parsed_eco(
+        db=db,
+        bom_upload=bom_upload,
+        parsed_eco=eco_record_to_parsed_change(eco_record),
+        eco_record=eco_record,
+        user_id=user_id,
+    )
+
+
+def _generate_and_save_from_parsed_eco(
+    *,
+    db: Session,
+    bom_upload: UploadedFile,
+    parsed_eco,
+    eco_record: EcoRecord,
     user_id: int,
 ) -> ImpactReport:
     if bom_upload.uploader_id != user_id:
@@ -65,14 +118,6 @@ def generate_and_save_impact_report(
     except BomParserError as error:
         raise ReportPersistenceError(str(error)) from error
 
-    parsed_eco = EngineeringChangeParser().parse_text(eco_text)
-    eco_record = create_eco_record(
-        db=db,
-        parsed=parsed_eco,
-        user_id=user_id,
-        source_type="text",
-        source_text=eco_text,
-    )
     graph = build_dependency_graph(parsed_bom.rows)
     document_sections = _build_document_section_impacts(
         db=db,
@@ -119,6 +164,8 @@ def save_impact_report(
         risk_score=report.risk.score,
         report_json=report.model_dump(mode="json"),
         status="generated",
+        review_status="draft",
+        owner_user_id=user_id,
     )
     db.add(saved)
     db.commit()

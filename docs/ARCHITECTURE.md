@@ -190,7 +190,7 @@ Replacement candidates are deterministic hints based on assembly context and des
    - `/api/v1/eco-records/{record_id}/reject`
 7. Backend persists workflow status, notes, and timestamps.
 
-This is a lightweight single-user review trail. A later phase can add assigned approvers, team permissions, and report generation from approved ECO records.
+This is a lightweight single-user review trail. Report generation can now use selected approved ECO records; a later phase can add assigned approvers and team permissions.
 
 ## Document Intelligence Flow
 
@@ -227,12 +227,25 @@ Current document intelligence is deterministic. It relies on extracted text and 
 
 1. Frontend calls `/api/v1/jobs/reports/impact-report`.
 2. Background worker reuses or creates a normalized BOM import.
-3. Worker parses and saves the ECO record.
+3. Worker either parses pasted ECO text or loads a selected approved ECO record.
 4. Worker finds indexed document sections that reference ECO old/new parts.
 5. `services/intelligence_layer.py` generates the structured report.
 6. `services/report_persistence.py` stores report metadata and full structured JSON.
 7. Job result metadata includes the saved report id.
 8. Frontend refreshes saved reports and renders report detail pages.
+
+## Report Collaboration and Export Flow
+
+1. User opens a saved report detail page.
+2. Frontend can download CSV or PDF through:
+   - `/api/v1/reports/{report_id}/export.csv`
+   - `/api/v1/reports/{report_id}/export.pdf`
+3. `services/report_exports.py` renders exports from persisted structured report JSON.
+4. User can update report review status through `/api/v1/reports/{report_id}/review`.
+5. User can add comments through `/api/v1/reports/{report_id}/comments`.
+6. Backend persists comments in `report_comments` and review metadata on `impact_reports`.
+
+Current collaboration is scoped to the report owner. Team visibility and share links are future production features.
 
 ## Logging and Errors
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class JobRead(BaseModel):
@@ -29,4 +29,11 @@ class JobListResponse(BaseModel):
 
 class CreateReportJobRequest(BaseModel):
     bom_upload_id: int
-    eco_text: str = Field(min_length=1, max_length=20_000)
+    eco_text: str | None = Field(default=None, min_length=1, max_length=20_000)
+    eco_record_id: int | None = None
+
+    @model_validator(mode="after")
+    def require_eco_source(self) -> "CreateReportJobRequest":
+        if not self.eco_text and self.eco_record_id is None:
+            raise ValueError("Provide ECO text or an approved ECO record id.")
+        return self

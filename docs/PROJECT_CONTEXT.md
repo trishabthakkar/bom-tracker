@@ -244,6 +244,31 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 - Added Alembic migration `20260709_0006_advanced_bom_eco_workflows.py`.
 - Added backend unit coverage for BOM diff behavior and ECO workflow transitions.
 
+### Phase 18 - Reporting, Export, and Collaboration
+
+- Added report review metadata:
+  - `review_status`
+  - `owner_user_id`
+  - `assigned_user_id`
+  - `signoff_notes`
+  - `reviewed_at`
+  - `signed_off_at`
+- Added persisted `report_comments`.
+- Added report review statuses:
+  - `draft`
+  - `in_review`
+  - `changes_requested`
+  - `signed_off`
+- Added report review update endpoint.
+- Added report comments endpoint.
+- Added CSV report export.
+- Added simple PDF report export without adding a new dependency.
+- Added report generation from selected approved ECO records.
+- Updated Reports page to use either pasted ECO text or an approved ECO record.
+- Updated Report Detail page with export buttons, review/sign-off controls, and comments.
+- Added Alembic migration `20260709_0007_report_collaboration_exports.py`.
+- Added backend unit coverage for approved-ECO report generation, comments, review sign-off, and exports.
+
 ## Backend Endpoints
 
 Public:
@@ -283,6 +308,10 @@ Protected:
 - `POST /api/v1/reports/impact-report`
 - `GET /api/v1/reports`
 - `GET /api/v1/reports/{report_id}`
+- `GET /api/v1/reports/{report_id}/export.csv`
+- `GET /api/v1/reports/{report_id}/export.pdf`
+- `PATCH /api/v1/reports/{report_id}/review`
+- `POST /api/v1/reports/{report_id}/comments`
 - `DELETE /api/v1/reports/{report_id}`
 - `POST /api/v1/jobs/bom-imports/from-upload/{upload_id}`
 - `POST /api/v1/jobs/eco-records/parse-upload/{upload_id}`
@@ -453,9 +482,9 @@ Current behavior:
 - Approval and rejection notes are persisted.
 - Review, approval, and rejection timestamps are persisted.
 
-Current limitation:
+Current behavior:
 
-- Report generation can still use raw ECO text directly. A future phase should let users generate reports directly from approved ECO records.
+- Report generation can use raw ECO text or a selected approved ECO record.
 
 ## Intelligence Layer
 
@@ -541,28 +570,12 @@ Current limitation:
 - Password reset and email verification flows.
 - Server-side token revocation.
 - Role-based access control.
+- Team-wide report visibility and share links.
 - Virus scanning.
 - Advanced MIME/content sniffing.
 - Object storage such as S3.
 
 ## Remaining Implementation Roadmap
-
-### Phase 18 - Reporting, Export, and Collaboration
-
-Goal: make impact reports usable by real teams.
-
-Tasks:
-
-- Add PDF export.
-- Add CSV/Excel export.
-- Add report sharing links or team visibility controls.
-- Add comments and review workflow.
-- Add report comparison/versioning.
-- Add sign-off statuses and ownership.
-
-Definition of done:
-
-- Reports can be reviewed, shared, exported, and tracked through a decision workflow.
 
 ### Phase 19 - Production Infrastructure
 
@@ -604,4 +617,4 @@ Definition of done:
 
 ## Recommended Next Phase
 
-Proceed with Phase 18: Reporting, Export, and Collaboration.
+Proceed with Phase 19: Production Infrastructure.

@@ -36,9 +36,11 @@ export async function startGraphBuildJob(uploadId: number): Promise<Job> {
 export async function startImpactReportJob({
   bomUploadId,
   ecoText,
+  ecoRecordId,
 }: {
   bomUploadId: number;
-  ecoText: string;
+  ecoText?: string;
+  ecoRecordId?: number;
 }): Promise<Job> {
   const response = await fetch(`${API_BASE_URL}/api/v1/jobs/reports/impact-report`, {
     method: "POST",
@@ -50,6 +52,7 @@ export async function startImpactReportJob({
     body: JSON.stringify({
       bom_upload_id: bomUploadId,
       eco_text: ecoText,
+      eco_record_id: ecoRecordId,
     }),
   });
 
