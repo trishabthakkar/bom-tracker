@@ -4,7 +4,7 @@ import pytest
 
 from app.schemas.eco import ParsedEngineeringChange
 from app.services.eco_parser import EngineeringChangeParser
-from app.services.llm.base import BaseLLMProvider
+from app.services.llm.base import BaseLLMProvider, LLMProviderError
 
 
 def test_parse_replacement_change() -> None:
@@ -66,3 +66,17 @@ def test_parser_uses_provider_abstraction() -> None:
     assert result.new_part == "NEW-1"
     assert result.reason == "parsed input"
     assert result.source == "fake"
+
+
+def test_parser_falls_back_to_rule_based_provider_on_llm_failure() -> None:
+    class FailingProvider(BaseLLMProvider):
+        def parse_engineering_change(self, text: str) -> ParsedEngineeringChange:
+            raise LLMProviderError("remote provider failed")
+
+    result = EngineeringChangeParser(provider=FailingProvider()).parse_text(
+        "Replace old part PN-100 with new part PN-200. Reason: supplier obsolescence."
+    )
+
+    assert result.source == "rule_based"
+    assert result.old_part == "PN-100"
+    assert result.new_part == "PN-200"

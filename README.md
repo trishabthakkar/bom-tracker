@@ -273,7 +273,16 @@ Extracted fields:
 - reason
 - effective date
 
-The parser uses an LLM abstraction layer with a local rule-based provider. External provider integration is intentionally deferred.
+The parser uses an LLM abstraction layer. The default provider is local and rule-based, and an optional OpenAI provider is available through environment configuration:
+
+```text
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your_api_key
+OPENAI_MODEL=gpt-4.1-mini
+LLM_FALLBACK_TO_RULE_BASED=true
+```
+
+If fallback is enabled and the remote provider fails, ECO parsing falls back to deterministic rule-based extraction.
 
 ## Intelligence Layer
 

@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     llm_provider: str = "rule_based"
     auth_rate_limit_per_minute: int = 10
     mutation_rate_limit_per_minute: int = 120
+    openai_api_key: str | None = None
+    openai_model: str = "gpt-4.1-mini"
+    llm_timeout_seconds: float = 20
+    llm_fallback_to_rule_based: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

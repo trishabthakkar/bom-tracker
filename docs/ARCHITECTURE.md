@@ -152,8 +152,10 @@ This is intentionally compatible with the existing synchronous endpoints. A futu
 
 1. Plain text is parsed directly, or uploaded PDF text is extracted first.
 2. `EngineeringChangeParser` calls a provider implementing `BaseLLMProvider`.
-3. The current provider is local and rule-based.
-4. Future provider-backed LLM implementations should implement the same interface.
+3. `LLM_PROVIDER=rule_based` uses local deterministic extraction.
+4. `LLM_PROVIDER=openai` uses `OpenAILLMProvider` for structured ECO extraction.
+5. If remote parsing fails and fallback is enabled, the parser falls back to the rule-based provider.
+6. Future provider-backed LLM implementations should implement the same interface.
 
 ## ECO Record Persistence Flow
 

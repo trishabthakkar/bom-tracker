@@ -195,6 +195,21 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 - Added configurable rate-limit environment variables.
 - Added backend unit coverage for CSRF policy, rate limiting, and security headers.
 
+### Phase 15 - AI Provider Integration
+
+- Added `OpenAILLMProvider` behind the existing `BaseLLMProvider` contract.
+- Added provider factory driven by `LLM_PROVIDER`.
+- Added OpenAI configuration:
+  - `OPENAI_API_KEY`
+  - `OPENAI_MODEL`
+  - `LLM_TIMEOUT_SECONDS`
+  - `LLM_FALLBACK_TO_RULE_BASED`
+- Kept `rule_based` as the default provider so local development works without API keys.
+- Added structured JSON-schema ECO extraction for the OpenAI provider.
+- Added provider timeout/error handling through `LLMProviderError`.
+- Added deterministic fallback to `RuleBasedLLMProvider` when remote provider calls fail and fallback is enabled.
+- Added unit coverage for OpenAI response parsing and fallback behavior.
+
 ## Backend Endpoints
 
 Public:
@@ -415,7 +430,6 @@ Persistence behavior:
 
 - Manual/service/installation/commissioning document parsing.
 - Exact downstream document section matching.
-- External AI/LLM provider integration.
 - Visual frontend dependency graph rendering.
 - Durable external worker queue such as Celery/RQ/Arq.
 - Password reset and email verification flows.
@@ -426,24 +440,6 @@ Persistence behavior:
 - Object storage such as S3.
 
 ## Remaining Implementation Roadmap
-
-### Phase 15 - AI Provider Integration
-
-Goal: replace or augment the rule-based ECO provider with real provider-backed extraction.
-
-Tasks:
-
-- Implement an external provider behind `BaseLLMProvider`.
-- Add provider configuration and secrets management.
-- Add prompt templates and versioning.
-- Add model fallback behavior.
-- Add provider timeout/retry handling.
-- Add structured output validation.
-- Keep deterministic fallback for local development and resilience.
-
-Definition of done:
-
-- ECO parsing can use a real LLM provider without changing API routes or business workflows.
 
 ### Phase 16 - Downstream Document Intelligence
 
@@ -537,4 +533,4 @@ Definition of done:
 
 ## Recommended Next Phase
 
-Proceed with Phase 15: AI Provider Integration.
+Proceed with Phase 16: Downstream Document Intelligence.

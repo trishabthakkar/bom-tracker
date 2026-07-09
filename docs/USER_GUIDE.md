@@ -513,8 +513,21 @@ The current parser uses a provider abstraction:
 
 - `BaseLLMProvider` defines the interface.
 - `RuleBasedLLMProvider` provides local deterministic parsing.
+- `OpenAILLMProvider` can call OpenAI for structured ECO extraction when configured.
 
-No external AI provider is connected yet. This keeps the MVP usable without API keys and makes future LLM integration easier.
+The default provider is still `rule_based`, so the MVP remains usable without API keys.
+
+To enable OpenAI-backed parsing, configure:
+
+```text
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your_api_key
+OPENAI_MODEL=gpt-4.1-mini
+LLM_TIMEOUT_SECONDS=20
+LLM_FALLBACK_TO_RULE_BASED=true
+```
+
+When fallback is enabled, the backend returns to deterministic rule-based parsing if the remote provider fails.
 
 For PDFs, the backend extracts text first, then sends that text to the same parser.
 
@@ -838,11 +851,10 @@ Both are allowed by backend CORS config.
 ## Current MVP Limitations
 
 - Dependency graph data is shown through metrics, lookup lists, and edge tables, not a full interactive graph canvas yet.
-- No external LLM provider is connected yet.
 - No PDF export, report sharing, approval workflow, or team permissions yet.
 - Background jobs use FastAPI in-process workers for MVP; a production queue such as Celery, RQ, or Arq is not connected yet.
 - Password reset, email verification, server-side token revocation, RBAC, and virus scanning are not implemented yet.
 
 ## Recommended Next Phases
 
-Phase 15 should add a real LLM provider behind the existing ECO parsing abstraction.
+Phase 16 should add downstream document intelligence for procurement records, installation guides, commissioning procedures, and service manuals.
