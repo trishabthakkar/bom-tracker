@@ -42,7 +42,9 @@ jobs:
         run: python -m compileall backend/app backend/alembic
 
       - name: Run backend tests
-        run: backend/.venv/bin/pytest
+        run: |
+          cd backend
+          .venv/bin/pytest
 
       - name: Run performance smoke
         env:
