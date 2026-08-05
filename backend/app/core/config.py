@@ -1,9 +1,11 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_DEV_JWT_SECRET = "change-this-dev-secret-before-production"
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -34,7 +36,9 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 20
     llm_fallback_to_rule_based: bool = True
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=BACKEND_ROOT / ".env", env_file_encoding="utf-8"
+    )
 
     @property
     def cors_origins(self) -> list[str]:
