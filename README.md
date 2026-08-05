@@ -94,8 +94,9 @@ Stack:
 - FastAPI
 - SQLAlchemy
 - Alembic
-- PostgreSQL by default for local development
-- SQLite-compatible via `DATABASE_URL` if needed for quick experiments
+- PostgreSQL for local development, CI, and production
+
+Migrations use PostgreSQL-specific constraint operations (see `alembic/versions/20260709_0006_advanced_bom_eco_workflows.py`), so they do not run against SQLite without batch mode. `DATABASE_URL` can point at SQLite for quick, throwaway experiments that don't touch migrations, but it is not a supported migration target.
 
 Start PostgreSQL:
 
@@ -115,7 +116,7 @@ Run independently:
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 cp .env.example .env
 alembic upgrade head
 uvicorn app.main:app --reload

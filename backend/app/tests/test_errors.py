@@ -1,8 +1,9 @@
 import asyncio
 
 from fastapi import Request
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
+from app.api.v1 import health
 from app.core.errors import APIError
 from app.core.errors import database_error_handler
 
@@ -35,3 +36,34 @@ def test_database_error_handler_returns_service_unavailable() -> None:
     assert response.status_code == 503
     assert b"database_unavailable" in response.body
     assert b"Database unavailable" in response.body
+
+
+def test_readiness_check_returns_503_when_database_is_unavailable(monkeypatch) -> None:
+    def broken_session_local() -> None:
+        raise SQLAlchemyError("database unavailable")
+
+    monkeypatch.setattr(health, "SessionLocal", broken_session_local)
+
+    response = health.readiness_check()
+
+    assert response.status_code == 503
+    assert b"unavailable" in response.body
+
+
+def test_readiness_check_returns_200_when_database_is_available(monkeypatch) -> None:
+    class WorkingSession:
+        def __enter__(self) -> "WorkingSession":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def execute(self, *args: object, **kwargs: object) -> None:
+            return None
+
+    monkeypatch.setattr(health, "SessionLocal", WorkingSession)
+
+    response = health.readiness_check()
+
+    assert response.status_code == 200
+    assert b"ready" in response.body

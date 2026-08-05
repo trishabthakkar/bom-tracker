@@ -18,6 +18,7 @@ PUBLIC_PATHS = {
     "/api/v1/login",
     "/api/v1/logout",
     "/api/v1/health",
+    "/api/v1/ready",
 }
 PROTECTED_PATHS = {"/me", "/api/v1/me"}
 PROTECTED_PREFIXES = ("/api/v1",)

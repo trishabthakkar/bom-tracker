@@ -15,7 +15,7 @@ Every measured value in this document was produced by running the code, not by i
 | 21 | Deterministic configuration and local database | Yes | Done (2026-08-03) |
 | 22 | Dependency graph edge direction | Yes | Done (2026-08-04) |
 | 23 | Bound dependency path enumeration | No | Done (2026-08-05) |
-| 24 | Unblock production deploy and CI | Yes | Not started |
+| 24 | Unblock production deploy and CI | Yes | Done (2026-08-05) |
 | 25 | Middleware ordering / rate limiting | No | Not started |
 | 26 | Timezone-aware timestamps | No | Not started |
 | 27 | Consolidate test fixtures | No | Not started |
@@ -432,6 +432,47 @@ docker compose --env-file .env.production -f docker-compose.prod.yml ps
 
 All services should reach `healthy` and the frontend should be reachable. This is the first
 time that command will complete.
+
+### Result (2026-08-05)
+
+Implemented as specified, plus test coverage the plan didn't call out explicitly:
+
+- `backend/app/middleware/auth.py` - added `/api/v1/ready` to `PUBLIC_PATHS`.
+- `backend/app/api/v1/health.py` - `readiness_check` now returns a real `JSONResponse` with
+  `503` on a database failure instead of `200` with a body claiming `"unavailable"`.
+- `backend/app/tests/test_errors.py` - two new tests using hand-rolled context-manager
+  objects and `monkeypatch` (no mocking library introduced - none was used anywhere else in
+  this suite) to exercise both the 503 and 200 paths of `readiness_check` directly.
+- `.github/workflows/ci.yml` - added a `postgres:16-alpine` service container to the
+  `backend` job and pointed the "Validate Alembic migrations" step at it instead of SQLite.
+- `backend/requirements-dev.txt` (new) - `-r requirements.txt` plus `pytest==8.3.4`.
+  `backend/requirements.txt` no longer has pytest, so `backend/Dockerfile` (which only ever
+  installed `requirements.txt`) stops shipping it in the production image as a side effect -
+  no Dockerfile edit was needed.
+- `README.md` - install instructions now use `requirements-dev.txt` (needed since the
+  "Run parser tests" section a few paragraphs later depends on `pytest` being installed);
+  replaced the "SQLite-compatible... for quick experiments" claim with an explanation of
+  why migrations specifically require PostgreSQL.
+
+Verification performed:
+
+- Reproduced the original failure directly: `curl -fsS http://127.0.0.1:8000/api/v1/ready`
+  returned `401` (`curl: (22)`) before this fix. After: `200` with
+  `{"status":"ready","database":"ok"}`.
+- `pytest`: 47 passed (45 baseline + 2 new).
+- Installed `backend/requirements-dev.txt` into a completely fresh venv - confirms both
+  `pytest` and the runtime deps resolve correctly as one file.
+- Started a disposable `postgres:16-alpine` container matching the new CI service
+  definition exactly (fresh volume, same image, same credentials) and ran
+  `alembic upgrade head` against it directly: all 7 migrations applied cleanly.
+- Ran the full production stack end-to-end under an isolated Compose project name
+  (`bom-tracker-prodcheck`, separate network/volumes from the dev stack) via
+  `docker compose --env-file .env.production -p bom-tracker-prodcheck -f docker-compose.prod.yml up -d`.
+  Result: `postgres` healthy, `migrate` ran all 7 migrations and exited 0, **`backend`
+  reached `healthy`** (previously impossible - this is the deadlock the phase fixes),
+  `frontend` came up and correctly proxied `/api/v1/health` through nginx. Torn down
+  afterward with `down -v`; confirmed the real dev stack (port 8000/5173/55432) was
+  untouched throughout.
 
 ---
 

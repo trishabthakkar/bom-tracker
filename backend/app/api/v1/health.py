@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -13,11 +14,14 @@ def health_check() -> dict[str, str]:
 
 
 @router.get("/ready")
-def readiness_check() -> dict[str, str]:
+def readiness_check() -> JSONResponse:
     try:
         with SessionLocal() as db:
             db.execute(text("SELECT 1"))
     except SQLAlchemyError:
-        return {"status": "unavailable", "database": "error"}
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "unavailable", "database": "error"},
+        )
 
-    return {"status": "ready", "database": "ok"}
+    return JSONResponse(content={"status": "ready", "database": "ok"})
