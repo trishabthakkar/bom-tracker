@@ -18,9 +18,7 @@ import { pollJobUntilFinished, startEcoUploadParseJob, type Job } from "@/lib/jo
 import type { UploadedFile } from "@/lib/uploadApi";
 
 export function UploadEcoPage() {
-  const [ecoText, setEcoText] = useState(
-    "Replace old part PN-1212 with new part PN-2212. Reason: supplier obsolescence. Effective date: 2026-08-15.",
-  );
+  const [ecoText, setEcoText] = useState("");
   const [records, setRecords] = useState<EcoRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -186,6 +184,7 @@ export function UploadEcoPage() {
             value={ecoText}
             onChange={(event) => setEcoText(event.target.value)}
             aria-label="ECO text"
+            placeholder="Replace old part PN-1212 with new part PN-2212. Reason: supplier obsolescence. Effective date: 2026-08-15."
           />
           {message ? (
             <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">

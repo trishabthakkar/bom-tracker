@@ -20,7 +20,7 @@ export function DependencyGraphPage() {
   const [selectedUploadId, setSelectedUploadId] = useState("");
   const [graph, setGraph] = useState<GraphBuild | null>(null);
   const [stats, setStats] = useState<GraphStats | null>(null);
-  const [partNumber, setPartNumber] = useState("PN-1212");
+  const [partNumber, setPartNumber] = useState("");
   const [parents, setParents] = useState<string[]>([]);
   const [children, setChildren] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -189,6 +189,7 @@ export function DependencyGraphPage() {
                 value={partNumber}
                 onChange={(event) => setPartNumber(event.target.value)}
                 aria-label="Part number"
+                placeholder="e.g. PN-1212"
               />
               <Button type="button" disabled={querying} onClick={handlePartLookup}>
                 <Search className="h-4 w-4" />

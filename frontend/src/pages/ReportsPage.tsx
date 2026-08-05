@@ -19,9 +19,7 @@ export function ReportsPage() {
   const [selectedUploadId, setSelectedUploadId] = useState("");
   const [ecoSourceMode, setEcoSourceMode] = useState<"text" | "record">("text");
   const [selectedEcoRecordId, setSelectedEcoRecordId] = useState("");
-  const [ecoText, setEcoText] = useState(
-    "Replace old part PN-1212 with new part PN-2212. Reason: supplier obsolescence. Effective date: 2026-08-15.",
-  );
+  const [ecoText, setEcoText] = useState("");
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [job, setJob] = useState<Job | null>(null);
@@ -155,6 +153,7 @@ export function ReportsPage() {
                 className="min-h-24 w-full rounded-md border bg-background p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={ecoText}
                 onChange={(event) => setEcoText(event.target.value)}
+                placeholder="Replace old part PN-1212 with new part PN-2212. Reason: supplier obsolescence. Effective date: 2026-08-15."
               />
             </label>
           )}
