@@ -1,0 +1,14 @@
+Part Number,Description,Parent Assembly,Revision
+PC-1000,Desktop Computer System,,A
+MB-1100,ATX Motherboard,PC-1000,B
+CPU-1110,Processor,MB-1100,C
+COOL-1111,CPU Cooler,CPU-1110,A
+RAM-1120,Memory Module (Slot 1),MB-1100,A
+RAM-1121,Memory Module (Slot 2),MB-1100,A
+GPU-1130,Graphics Card,MB-1100,B
+PSU-1200,Power Supply,PC-1000,A
+CASE-1300,Computer Case,PC-1000,A
+FAN-1310,Case Cooling Fan,CASE-1300,A
+STOR-1400,Storage Subsystem,PC-1000,A
+SSD-1410,Solid State Drive,STOR-1400,B
+HDD-1420,Hard Disk Drive,STOR-1400,A

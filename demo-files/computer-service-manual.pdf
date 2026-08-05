@@ -1,0 +1,55 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 478 >>
+stream
+BT
+/F1 11 Tf
+50 770 Td
+16 TL
+(Desktop Service Manual) Tj
+T*
+() Tj
+T*
+(POWER SUPPLY SERVICE) Tj
+T*
+(PSU-1200 supplies power to all internal components.) Tj
+T*
+(Disconnect all cables from PSU-1200 before removal.) Tj
+T*
+(Replacement PSU-1200 units must match the original wattage rating.) Tj
+T*
+() Tj
+T*
+(STORAGE SERVICE) Tj
+T*
+(SSD-1410 is the primary boot drive and contains the operating system.) Tj
+T*
+(HDD-1420 is used for bulk storage and does not affect SSD-1410.) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+840
+%%EOF

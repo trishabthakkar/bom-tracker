@@ -1,0 +1,83 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 1168 >>
+stream
+BT
+/F1 10 Tf
+50 770 Td
+14 TL
+(Engineering Change Order: ECO-2026-0915) Tj
+T*
+(Title: Replace processor in desktop computer system) Tj
+T*
+() Tj
+T*
+(Change type: part replacement) Tj
+T*
+(Old part: CPU-1110) Tj
+T*
+(New part: CPU-1115) Tj
+T*
+(Reason: The current processor CPU-1110 is being discontinued by the) Tj
+T*
+(manufacturer. The replacement processor CPU-1115 uses a compatible) Tj
+T*
+(socket and requires no motherboard changes.) Tj
+T*
+(Effective date: 2026-09-15) Tj
+T*
+() Tj
+T*
+(Affected product context:) Tj
+T*
+(The change applies to the Desktop Computer System motherboard assembly.) Tj
+T*
+() Tj
+T*
+(Implementation notes:) Tj
+T*
+(- Replace CPU-1110 Processor with CPU-1115 Processor.) Tj
+T*
+(- Verify CPU-1115 is compatible with the existing MB-1100 motherboard.) Tj
+T*
+(- Confirm COOL-1111 cooler mounting hardware fits CPU-1115.) Tj
+T*
+(- Review procurement records for supplier and lead time.) Tj
+T*
+(- Review installation guide CPU steps for updated torque specs.) Tj
+T*
+() Tj
+T*
+(Expected risk:) Tj
+T*
+(High. The affected part is the primary processor and impacts the) Tj
+T*
+(motherboard assembly, cooler compatibility, and procurement records.) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+1531
+%%EOF
