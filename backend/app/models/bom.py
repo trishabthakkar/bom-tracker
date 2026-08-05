@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.time import utcnow
 from app.db.base_class import Base
 
 
@@ -22,8 +23,8 @@ class BomImport(Base):
     import_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     row_count: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(40), default="imported", nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class BomPart(Base):
@@ -43,7 +44,7 @@ class BomPart(Base):
     parent_assembly: Mapped[str | None] = mapped_column(String(120), index=True, nullable=True)
     child_assembly: Mapped[str | None] = mapped_column(String(120), index=True, nullable=True)
     revision: Mapped[str | None] = mapped_column(String(80), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
 class AssemblyRelationship(Base):
@@ -59,4 +60,4 @@ class AssemblyRelationship(Base):
     parent_part_number: Mapped[str] = mapped_column(String(120), index=True, nullable=False)
     child_part_number: Mapped[str] = mapped_column(String(120), index=True, nullable=False)
     relationship_type: Mapped[str] = mapped_column(String(40), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

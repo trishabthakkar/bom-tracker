@@ -1,7 +1,7 @@
 import csv
 import io
-from datetime import datetime
 
+from app.core.time import utcnow
 from app.models.report import ImpactReport
 from app.services.report_persistence import report_to_structured
 
@@ -82,7 +82,7 @@ def report_pdf_bytes(report: ImpactReport) -> bytes:
 
 
 def export_filename(report: ImpactReport, extension: str) -> str:
-    timestamp = datetime.utcnow().strftime("%Y%m%d")
+    timestamp = utcnow().strftime("%Y%m%d")
     return f"impact-report-{report.id}-{timestamp}.{extension}"
 
 

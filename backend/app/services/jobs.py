@@ -1,10 +1,10 @@
 from collections.abc import Callable
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.time import utcnow
 from app.db.session import SessionLocal
 from app.models.eco import EcoRecord
 from app.models.job import Job
@@ -116,7 +116,7 @@ def _mark_processing(*, db: Session, job: Job) -> None:
     job.status = JOB_STATUS_PROCESSING
     job.progress_percent = 10
     job.status_message = "Processing started."
-    job.started_at = datetime.utcnow()
+    job.started_at = utcnow()
     db.add(job)
     db.commit()
     db.refresh(job)
@@ -128,7 +128,7 @@ def _mark_completed(*, db: Session, job: Job, result: dict[str, Any]) -> None:
     job.status_message = "Processing completed."
     job.result_json = result
     job.error_message = None
-    job.completed_at = datetime.utcnow()
+    job.completed_at = utcnow()
     job.entity_type = result.get("entity_type")
     job.entity_id = result.get("entity_id")
     db.add(job)
@@ -144,7 +144,7 @@ def _mark_failed(*, db: Session, job_id: int, error_message: str) -> None:
     job.progress_percent = 100
     job.status_message = "Processing failed."
     job.error_message = error_message or "Job failed."
-    job.completed_at = datetime.utcnow()
+    job.completed_at = utcnow()
     db.add(job)
     db.commit()
 

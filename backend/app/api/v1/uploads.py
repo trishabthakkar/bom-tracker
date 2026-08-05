@@ -1,10 +1,9 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.time import utcnow
 from app.db.session import get_db
 from app.models.bom import BomImport
 from app.models.report import ImpactReport
@@ -99,7 +98,7 @@ def _mark_matching_uploads_replaced(
         return
 
     upload_ids = [upload.id for upload in matching_uploads]
-    now = datetime.utcnow()
+    now = utcnow()
 
     for upload in matching_uploads:
         upload.status = "replaced"

@@ -1,8 +1,7 @@
-from datetime import datetime
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.time import utcnow
 from app.models.report import ImpactReport, ReportComment
 
 
@@ -56,7 +55,7 @@ def update_report_review(
     if review_status not in VALID_REVIEW_STATUSES:
         raise ReportCollaborationError("Unsupported report review status.")
 
-    now = datetime.utcnow()
+    now = utcnow()
     report.review_status = review_status
     report.assigned_user_id = assigned_user_id
     report.signoff_notes = signoff_notes.strip() if signoff_notes else None

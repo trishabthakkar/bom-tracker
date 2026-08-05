@@ -1,8 +1,7 @@
-from datetime import datetime
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.time import utcnow
 from app.models.document import DocumentSection, EngineeringDocument
 from app.models.upload import UploadedFile
 from app.services.document_parser import DocumentParserError, parse_document_text
@@ -154,7 +153,7 @@ def find_sections_referencing_parts(
 
 def archive_document(*, db: Session, document: EngineeringDocument) -> EngineeringDocument:
     document.status = "archived"
-    document.archived_at = datetime.utcnow()
+    document.archived_at = utcnow()
     db.add(document)
     db.flush()
     return document

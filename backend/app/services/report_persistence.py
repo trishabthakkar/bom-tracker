@@ -1,8 +1,7 @@
-from datetime import datetime
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.time import utcnow
 from app.models.bom import BomImport
 from app.models.eco import EcoRecord
 from app.models.graph_snapshot import GraphSnapshot
@@ -194,7 +193,7 @@ def get_report(*, db: Session, report_id: int, user_id: int) -> ImpactReport | N
 
 def archive_report(*, db: Session, report: ImpactReport) -> ImpactReport:
     report.status = "archived"
-    report.archived_at = datetime.utcnow()
+    report.archived_at = utcnow()
     db.add(report)
     db.commit()
     db.refresh(report)

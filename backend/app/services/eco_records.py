@@ -1,8 +1,9 @@
-from datetime import date, datetime
+from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.time import utcnow
 from app.models.eco import EcoRecord
 from app.models.upload import UploadedFile
 from app.schemas.eco import ParsedEngineeringChange
@@ -122,7 +123,7 @@ def update_eco_record(
     record.effective_date = effective_date
     record.correction_notes = _clean_optional(correction_notes)
     record.workflow_status = "reviewed"
-    record.reviewed_at = datetime.utcnow()
+    record.reviewed_at = utcnow()
     record.approved_at = None
     record.rejected_at = None
     db.add(record)
@@ -134,7 +135,7 @@ def update_eco_record(
 def mark_eco_reviewed(*, db: Session, record: EcoRecord, notes: str | None = None) -> EcoRecord:
     record.workflow_status = "reviewed"
     record.correction_notes = _clean_optional(notes) or record.correction_notes
-    record.reviewed_at = datetime.utcnow()
+    record.reviewed_at = utcnow()
     record.approved_at = None
     record.rejected_at = None
     db.add(record)
@@ -146,8 +147,8 @@ def mark_eco_reviewed(*, db: Session, record: EcoRecord, notes: str | None = Non
 def approve_eco_record(*, db: Session, record: EcoRecord, notes: str | None = None) -> EcoRecord:
     record.workflow_status = "approved"
     record.approval_notes = _clean_optional(notes)
-    record.reviewed_at = record.reviewed_at or datetime.utcnow()
-    record.approved_at = datetime.utcnow()
+    record.reviewed_at = record.reviewed_at or utcnow()
+    record.approved_at = utcnow()
     record.rejected_at = None
     db.add(record)
     db.commit()
@@ -158,8 +159,8 @@ def approve_eco_record(*, db: Session, record: EcoRecord, notes: str | None = No
 def reject_eco_record(*, db: Session, record: EcoRecord, notes: str | None = None) -> EcoRecord:
     record.workflow_status = "rejected"
     record.approval_notes = _clean_optional(notes)
-    record.reviewed_at = record.reviewed_at or datetime.utcnow()
-    record.rejected_at = datetime.utcnow()
+    record.reviewed_at = record.reviewed_at or utcnow()
+    record.rejected_at = utcnow()
     record.approved_at = None
     db.add(record)
     db.commit()

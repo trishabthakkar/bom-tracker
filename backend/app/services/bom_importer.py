@@ -1,8 +1,7 @@
-from datetime import datetime
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.time import utcnow
 from app.models.bom import AssemblyRelationship, BomImport, BomPart
 from app.models.graph_snapshot import GraphSnapshot
 from app.models.upload import UploadedFile
@@ -133,7 +132,7 @@ def get_import_relationships(
 
 def archive_bom_import(*, db: Session, bom_import: BomImport) -> BomImport:
     bom_import.status = "archived"
-    bom_import.archived_at = datetime.utcnow()
+    bom_import.archived_at = utcnow()
     db.add(bom_import)
     db.commit()
     db.refresh(bom_import)

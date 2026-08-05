@@ -17,7 +17,7 @@ Every measured value in this document was produced by running the code, not by i
 | 23 | Bound dependency path enumeration | No | Done (2026-08-05) |
 | 24 | Unblock production deploy and CI | Yes | Done (2026-08-05) |
 | 25 | Middleware ordering / rate limiting | No | Done (2026-08-05) |
-| 26 | Timezone-aware timestamps | No | Not started |
+| 26 | Timezone-aware timestamps | No | Done (2026-08-05) |
 | 27 | Consolidate test fixtures | No | Not started |
 | 28 | Remove rot | No | Not started |
 | 29 | Consolidate workflow and docs | No | Not started |
@@ -579,6 +579,59 @@ both use.
 
 Upload a file. The API should return `...+00:00`, and the dashboard should show local
 wall-clock time rather than a UTC-offset-shifted value.
+
+### Result (2026-08-05)
+
+Implemented as specified, with one addition not called out in the plan text:
+
+- `backend/app/core/time.py` (new) - a single `utcnow() -> datetime` helper
+  (`datetime.now(UTC)`). The plan said "replace all `datetime.utcnow` occurrences with
+  `datetime.now(UTC)`" directly, but `datetime.now` needs an argument, so it can't be passed
+  bare as a `mapped_column(default=..., onupdate=...)` callable the way `datetime.utcnow`
+  was - every call site needed either a lambda or a named helper. With 25 column
+  definitions across 8 model files plus ~15 service-layer call sites all needing the same
+  fix, a one-line shared helper was clearly past the threshold for a name of its own rather
+  than repeating `lambda: datetime.now(UTC)` twenty-some times.
+- All 8 model files (`user.py`, `upload.py`, `bom.py`, `document.py`, `eco.py`, `job.py`,
+  `report.py`, `graph_snapshot.py`) - every `DateTime` column changed to
+  `DateTime(timezone=True)`, every `datetime.utcnow` default/onupdate changed to `utcnow`.
+  25 columns across 12 tables total (`bom.py`, `document.py`, and `report.py` each define
+  multiple tables).
+- 8 service-layer files with direct `datetime.utcnow()` call sites
+  (`api/v1/uploads.py`, `services/documents.py`, `services/report_persistence.py`,
+  `services/bom_importer.py`, `services/eco_records.py`, `services/report_exports.py`,
+  `services/jobs.py`, `services/report_collaboration.py`) - all switched to `utcnow()`, with
+  the now-unused `datetime` import removed from each (confirmed first that none of these
+  files used `datetime` for anything besides `.utcnow()` - `eco_records.py` also imports
+  `date`, which was kept).
+- `backend/alembic/versions/20260805_0008_timezone_aware_timestamps.py` (new) - rather than
+  hand-writing 25 near-identical `op.alter_column(...)` calls (the plan's example shows one),
+  the migration iterates a `TIMESTAMP_COLUMNS` list of `(table, column)` pairs for both
+  `upgrade()` and `downgrade()`. This is templated, mechanically-identical work across every
+  column, which is exactly the case a loop is justified for, unlike migrations 0006/0007
+  where each column needed genuinely different operations.
+
+Verification performed:
+
+- Ran the full migration chain (all 8 migrations, 0001 through 0008) from scratch against a
+  disposable Postgres container: applied cleanly. Queried `information_schema.columns`
+  directly - confirmed all 25 application columns are `timestamp with time zone`.
+- Tested `alembic downgrade -1` on the same disposable database: correctly reverts all 25
+  columns back to `timestamp without time zone`. Torn down afterward.
+- `pytest`: 48 passed, unchanged - the existing suite uses in-memory SQLite, which doesn't
+  distinguish aware/naive `DateTime` the way Postgres does, so this didn't (and couldn't)
+  catch a regression here; the migration test above is what actually exercises the
+  Postgres-specific behavior.
+- Applied the migration to the real dev database (which has live demo account data, not a
+  throwaway one): the existing `users.created_at` row value was preserved exactly
+  (`2026-08-05 06:46:25.906168` -> `2026-08-05 06:46:25.906168+00`), confirming no data loss
+  during the type conversion.
+- Restarted the backend and checked a real API response: `created_at` now serializes as
+  `"2026-08-05T07:46:34.711832Z"` (previously no `Z`/offset at all).
+- Confirmed visually in the running frontend: that same upload displays as
+  **"8/5/2026, 11:46:34 AM"** on the dashboard, which is exactly 07:46 UTC + 4 hours - the
+  correct local time for this machine's UTC+4 timezone. Before this fix, the same
+  underlying value would have rendered as "7:46:34 AM" (misread as already-local).
 
 ---
 
