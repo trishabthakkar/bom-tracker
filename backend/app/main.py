@@ -25,10 +25,17 @@ def create_app() -> FastAPI:
 
     app.add_exception_handler(APIError, api_error_handler)
     app.add_exception_handler(SQLAlchemyError, database_error_handler)
+    # add_middleware() prepends internally, so the LAST middleware added
+    # here is the FIRST to dispatch on an incoming request (dispatch order
+    # is the exact reverse of registration order below). RateLimitMiddleware
+    # reads request.state.user_id to key per-user buckets, and only
+    # JWTAuthenticationMiddleware sets that - so JWTAuthenticationMiddleware
+    # must be registered after (and therefore dispatch before)
+    # InMemoryRateLimitMiddleware.
     app.add_middleware(RequestLoggingMiddleware)
+    app.add_middleware(InMemoryRateLimitMiddleware)
     app.add_middleware(JWTAuthenticationMiddleware)
     app.add_middleware(CSRFMiddleware)
-    app.add_middleware(InMemoryRateLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

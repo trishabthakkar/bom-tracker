@@ -16,7 +16,7 @@ Every measured value in this document was produced by running the code, not by i
 | 22 | Dependency graph edge direction | Yes | Done (2026-08-04) |
 | 23 | Bound dependency path enumeration | No | Done (2026-08-05) |
 | 24 | Unblock production deploy and CI | Yes | Done (2026-08-05) |
-| 25 | Middleware ordering / rate limiting | No | Not started |
+| 25 | Middleware ordering / rate limiting | No | Done (2026-08-05) |
 | 26 | Timezone-aware timestamps | No | Not started |
 | 27 | Consolidate test fixtures | No | Not started |
 | 28 | Remove rot | No | Not started |
@@ -494,6 +494,51 @@ the per-user branch never executes and every client behind one NAT shares a buck
    independent rate-limit buckets - the behaviour that silently does not exist today.
 3. Add a comment recording the intended execution order. This ordering is invisible when
    reading the file and will otherwise be broken again.
+
+### Result (2026-08-05)
+
+Implemented as specified, plus one correction to the written diagnosis and a change to how
+the regression test works, both found while verifying against the actual installed
+Starlette version (0.41.3) rather than trusting a manual trace:
+
+- `Starlette.add_middleware()` actually does `self.user_middleware.insert(0, ...)`
+  (prepend, confirmed by reading the installed library source directly) rather than the
+  simpler "outside-in, last registered runs first" description in the plan text - but
+  those two framings land on the same conclusion here: dispatch order ends up being the
+  *exact reverse* of registration order in `create_app()`. `InMemoryRateLimitMiddleware`
+  was registered before `JWTAuthenticationMiddleware`, so it dispatched *after* auth, which
+  is backwards from what the plan says but was still the same underlying bug - rate
+  limiting ran before auth could set `request.state.user_id`. Fixed by moving the
+  `add_middleware(InMemoryRateLimitMiddleware)` call to before
+  `add_middleware(JWTAuthenticationMiddleware)` in `backend/app/main.py`, with a comment
+  explaining the prepend mechanics so this doesn't get silently re-broken.
+- The plan's proposed test ("two authenticated users get independent rate-limit buckets")
+  would not actually have caught this bug: `InMemoryRateLimitMiddleware._is_limited` and
+  `_key_for_request` were never wrong in isolation - calling them directly with a
+  manually-set `request.state.user_id` (as the existing test-file pattern does) passes
+  whether or not the real middleware stack ever sets that attribute in the first place. The
+  bug lives entirely in *wiring*, not logic, so `backend/app/tests/test_security_middleware.py`
+  instead asserts directly on the real, constructed `app.user_middleware` list from
+  `app.main`, checking that `JWTAuthenticationMiddleware`'s index precedes
+  `InMemoryRateLimitMiddleware`'s. This is a level lower than an HTTP-level end-to-end test,
+  but avoids depending on a live database in a test suite where every other test uses a
+  fully isolated in-memory SQLite engine.
+
+Verification performed:
+
+- Wrote the new test first, against the unfixed file, and confirmed it failed with
+  `assert 4 < 2` (auth at dispatch index 4, rate limiting at index 2 - rate limiting
+  dispatching first, as diagnosed). Applied the fix, reran: passes.
+- `pytest`: 48 passed (47 baseline + 1 new).
+- Live end-to-end proof against the running app: temporarily set
+  `MUTATION_RATE_LIMIT_PER_MINUTE=3`, registered two real users, and hit a mutating
+  endpoint from both (same IP, since both requests come from this machine). User A: 3x
+  `200`, 4th request `429`. User B, immediately after on the same endpoint: `200` - a fresh
+  bucket, not blocked by user A's exhausted one. Cleaned up both temporary accounts
+  afterward and restarted the backend with normal settings; confirmed the real
+  `demo.walkthrough@example.com` account and its data were untouched throughout.
+- Frontend `tsc -b` and `eslint` clean (no frontend files touched by this phase, but
+  re-checked as part of the full local pass).
 
 ---
 
