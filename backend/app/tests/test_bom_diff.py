@@ -1,25 +1,8 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from app.db.base import Base
 from app.models.bom import BomImport, BomPart
 from app.models.user import User
 from app.services.bom_diff import compare_bom_imports
-
-
-def build_session() -> Session:
-    engine = create_engine("sqlite:///:memory:", future=True)
-    Base.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine, future=True)
-    return session_factory()
-
-
-def create_user(db: Session) -> User:
-    user = User(email="diff@example.com", full_name="Diff User", hashed_password="hashed")
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
 
 
 def create_import(db: Session, user: User, import_id_offset: int, parts: list[dict]) -> BomImport:
@@ -55,9 +38,10 @@ def create_import(db: Session, user: User, import_id_offset: int, parts: list[di
     return bom_import
 
 
-def test_compare_bom_imports_detects_added_removed_revised_and_replacements() -> None:
-    db = build_session()
-    user = create_user(db)
+def test_compare_bom_imports_detects_added_removed_revised_and_replacements(
+    db_session: Session, user: User
+) -> None:
+    db = db_session
     base = create_import(
         db,
         user,

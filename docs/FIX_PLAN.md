@@ -18,7 +18,7 @@ Every measured value in this document was produced by running the code, not by i
 | 24 | Unblock production deploy and CI | Yes | Done (2026-08-05) |
 | 25 | Middleware ordering / rate limiting | No | Done (2026-08-05) |
 | 26 | Timezone-aware timestamps | No | Done (2026-08-05) |
-| 27 | Consolidate test fixtures | No | Not started |
+| 27 | Consolidate test fixtures | No | Done (2026-08-05) |
 | 28 | Remove rot | No | Not started |
 | 29 | Consolidate workflow and docs | No | Not started |
 
@@ -647,6 +647,64 @@ of importing one.
    since Phase 21 makes every script run from there.
 
 Removes several hundred lines and gives one place to change when the schema moves.
+
+### Result (2026-08-05)
+
+Implemented as specified, with one design change to the `upload` fixture and one correction
+to the `pytest.ini` collapse, both found while verifying rather than assumed from the plan
+text:
+
+- `backend/app/tests/conftest.py` (new, 77 lines) - `db_session` (byte-for-byte identical
+  across all 9 prior copies of `build_session()`, confirmed by reading each one in full
+  before touching anything) and `user` (replaces the 4 standalone `create_user(db)`
+  functions, which differed only in a cosmetic hardcoded email string).
+- `upload` became a **factory fixture** (`make_upload`) instead of a plain fixture. The 9
+  call sites for upload creation genuinely differ, not just cosmetically: some need a real
+  on-disk file (`import_bom_upload` and friends call `parse_bom_file` on the stored path, so
+  the file has to actually exist and have real content), others use a fake placeholder path
+  and never read it; filenames, categories, and content types vary per test. A plain no-arg
+  `upload` fixture couldn't serve both cases - pytest fixtures can't take per-test arguments
+  directly, so "a fixture that returns a factory function" is the standard pytest pattern
+  for exactly this situation. Checked first that no test asserts on the specific
+  `stored_filename` values the old per-file helpers hardcoded (several used a different
+  string than `original_filename`, e.g. `"report-bom.csv"` vs `"bom.csv"`) - none do, so
+  collapsing that distinction in the factory doesn't change any test's pass/fail behavior.
+- Went file by file through all 9 (`test_bom_diff.py`, `test_eco_workflow.py`,
+  `test_bom_importer.py`, `test_report_collaboration.py`, `test_documents_api.py`,
+  `test_end_to_end_workflow.py`, `test_jobs.py`, `test_report_persistence.py`,
+  `test_upload_replacement.py`), removing the local duplicate and running that file's tests
+  before moving to the next, exactly as the plan specifies. Two files
+  (`test_eco_workflow.py`, `test_documents_api.py`) had inline user-creation duplicated
+  under a different function name rather than via a standalone `create_user` - consolidated
+  those too, since they were the same duplication the phase targets, just not named the way
+  the original grep for `create_user` had counted it.
+- **Correction to item 3**: the plan's premise - "Phase 21 makes every script run from
+  [`backend/`]" - turned out to be only true for the local `npm run backend:test` script.
+  CI's "Run backend tests" step still invoked `backend/.venv/bin/pytest` directly from the
+  repository root (`working-directory: .`), which depends on the root `pytest.ini`
+  (`pythonpath = backend`) rather than `backend/pytest.ini` (`pythonpath = .`). Verified this
+  by reproducing CI's exact invocation locally with the root `pytest.ini` temporarily
+  removed: collection failed with `ModuleNotFoundError: No module named 'app'`. Deleting the
+  root file as written would have broken CI. Fixed by also updating
+  `.github/workflows/ci.yml`'s "Run backend tests" step to `cd backend` first - matching the
+  pattern the "Validate Alembic migrations" step in the same file already used - and only
+  then deleting the root `pytest.ini`.
+
+Verification performed:
+
+- Ran the affected file's tests after every single-file edit (9 separate `pytest` runs),
+  not just once at the end.
+- Confirmed no `build_session` or standalone `create_user` definitions remain anywhere in
+  `app/tests/` (`grep -l` returns nothing).
+- Reproduced CI's exact pytest invocation locally twice: once proving it breaks without the
+  root `pytest.ini` and the CI fix, once proving the new `cd backend` step works correctly
+  with only `backend/pytest.ini` present.
+- Full suite: 48 passed, unchanged, run through both the local (`npm run backend:test`) and
+  now-matching CI-style (`cd backend && pytest`) invocations.
+- `python -m compileall backend/app backend/alembic`: clean.
+- Net effect: 346 lines removed and 79 added across the 9 test files (267 net), offset by
+  the new 77-line `conftest.py` - roughly 190 lines removed overall, plus one fewer
+  `pytest.ini` to keep in sync.
 
 ---
 

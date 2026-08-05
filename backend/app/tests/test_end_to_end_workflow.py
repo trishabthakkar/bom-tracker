@@ -1,10 +1,8 @@
 from datetime import date
 from pathlib import Path
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from app.db.base import Base
 from app.models.document import DocumentSection, EngineeringDocument
 from app.models.upload import UploadedFile
 from app.models.user import User
@@ -17,50 +15,7 @@ from app.services.report_persistence import (
     generate_and_save_impact_report_from_eco_record,
     report_to_structured,
 )
-
-
-def build_session() -> Session:
-    engine = create_engine("sqlite:///:memory:", future=True)
-    Base.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine, future=True)
-    return session_factory()
-
-
-def create_user(db: Session) -> User:
-    user = User(
-        email="phase20@example.com",
-        full_name="Phase 20 QA",
-        hashed_password="hashed",
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
-
-
-def create_upload(
-    *,
-    db: Session,
-    user: User,
-    path: Path,
-    filename: str,
-    category: str,
-) -> UploadedFile:
-    upload = UploadedFile(
-        uploader_id=user.id,
-        original_filename=filename,
-        stored_filename=path.name,
-        file_extension=path.suffix,
-        content_type="text/csv" if path.suffix == ".csv" else "application/pdf",
-        size_bytes=path.stat().st_size,
-        storage_path=str(path),
-        upload_category=category,
-        status="stored",
-    )
-    db.add(upload)
-    db.commit()
-    db.refresh(upload)
-    return upload
+from app.tests.conftest import MakeUpload
 
 
 def write_bom(path: Path, rows: list[str]) -> None:
@@ -104,9 +59,10 @@ def index_service_manual(db: Session, user: User, upload: UploadedFile) -> Engin
     return document
 
 
-def test_complete_bom_eco_report_workflow_with_diff_documents_and_exports(tmp_path: Path) -> None:
-    db = build_session()
-    user = create_user(db)
+def test_complete_bom_eco_report_workflow_with_diff_documents_and_exports(
+    tmp_path: Path, db_session: Session, user: User, make_upload: MakeUpload
+) -> None:
+    db = db_session
 
     base_path = tmp_path / "demo-bom.csv"
     target_path = tmp_path / "demo-bom-v2.csv"
@@ -133,22 +89,19 @@ def test_complete_bom_eco_report_workflow_with_diff_documents_and_exports(tmp_pa
     )
     manual_path.write_bytes(b"%PDF-1.4\n% qa placeholder\n")
 
-    base_upload = create_upload(
-        db=db,
+    base_upload = make_upload(
         user=user,
         path=base_path,
         filename="demo-bom.csv",
         category="bom",
     )
-    target_upload = create_upload(
-        db=db,
+    target_upload = make_upload(
         user=user,
         path=target_path,
         filename="demo-bom.csv",
         category="bom",
     )
-    manual_upload = create_upload(
-        db=db,
+    manual_upload = make_upload(
         user=user,
         path=manual_path,
         filename="service-manual.pdf",

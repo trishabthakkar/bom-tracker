@@ -1,45 +1,21 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from app.db.base import Base
 from app.api.v1.documents import read_affected_document_sections
 from app.models.document import DocumentSection, EngineeringDocument
-from app.models.upload import UploadedFile
 from app.models.user import User
+from app.tests.conftest import MakeUpload
 
 
-def build_session() -> Session:
-    engine = create_engine("sqlite:///:memory:", future=True)
-    Base.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine, future=True)
-    return session_factory()
-
-
-def test_read_affected_document_sections_returns_matches() -> None:
-    db = build_session()
-    user = User(
-        email="docs@example.com",
-        full_name="Docs User",
-        hashed_password="hashed",
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    upload = UploadedFile(
-        uploader_id=user.id,
-        original_filename="service-manual.pdf",
-        stored_filename="service-manual.pdf",
-        file_extension=".pdf",
-        content_type="application/pdf",
-        size_bytes=100,
+def test_read_affected_document_sections_returns_matches(
+    db_session: Session, user: User, make_upload: MakeUpload
+) -> None:
+    db = db_session
+    upload = make_upload(
+        user=user,
+        filename="service-manual.pdf",
+        category="document",
         storage_path="uploads/service-manual.pdf",
-        upload_category="document",
-        status="stored",
     )
-    db.add(upload)
-    db.commit()
-    db.refresh(upload)
 
     document = EngineeringDocument(
         user_id=user.id,

@@ -1,11 +1,8 @@
 from pathlib import Path
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from app.db.base import Base
 from app.models.job import Job
-from app.models.upload import UploadedFile
 from app.models.user import User
 from app.services.jobs import (
     JOB_STATUS_COMPLETED,
@@ -14,48 +11,11 @@ from app.services.jobs import (
     create_job,
     list_jobs,
 )
+from app.tests.conftest import MakeUpload
 
 
-def build_session() -> Session:
-    engine = create_engine("sqlite:///:memory:", future=True)
-    Base.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine, future=True)
-    return session_factory()
-
-
-def create_user(db: Session) -> User:
-    user = User(
-        email="jobs@example.com",
-        full_name="Jobs User",
-        hashed_password="hashed",
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
-
-
-def create_bom_upload(db: Session, user: User, path: Path) -> UploadedFile:
-    upload = UploadedFile(
-        uploader_id=user.id,
-        original_filename="bom.csv",
-        stored_filename="bom.csv",
-        file_extension=".csv",
-        content_type="text/csv",
-        size_bytes=path.stat().st_size,
-        storage_path=str(path),
-        upload_category="bom",
-        status="stored",
-    )
-    db.add(upload)
-    db.commit()
-    db.refresh(upload)
-    return upload
-
-
-def test_create_job_defaults_to_queued_status() -> None:
-    db = build_session()
-    user = create_user(db)
+def test_create_job_defaults_to_queued_status(db_session: Session, user: User) -> None:
+    db = db_session
 
     job = create_job(
         db=db,
@@ -71,12 +31,13 @@ def test_create_job_defaults_to_queued_status() -> None:
     assert list_jobs(db=db, user_id=user.id) == [job]
 
 
-def test_completed_job_can_store_entity_and_result_metadata(tmp_path: Path) -> None:
-    db = build_session()
-    user = create_user(db)
+def test_completed_job_can_store_entity_and_result_metadata(
+    tmp_path: Path, db_session: Session, user: User, make_upload: MakeUpload
+) -> None:
+    db = db_session
     path = tmp_path / "bom.csv"
     path.write_text("Part Number,Description\nPN-1,Valve\n", encoding="utf-8")
-    upload = create_bom_upload(db, user, path)
+    upload = make_upload(user=user, path=path)
 
     job = create_job(
         db=db,

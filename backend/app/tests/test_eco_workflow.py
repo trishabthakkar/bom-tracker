@@ -1,27 +1,13 @@
 from datetime import date
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from app.db.base import Base
 from app.models.eco import EcoRecord
 from app.models.user import User
 from app.services.eco_records import approve_eco_record, reject_eco_record, update_eco_record
 
 
-def build_session() -> Session:
-    engine = create_engine("sqlite:///:memory:", future=True)
-    Base.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine, future=True)
-    return session_factory()
-
-
-def create_record(db: Session) -> EcoRecord:
-    user = User(email="eco-flow@example.com", full_name="ECO Flow", hashed_password="hashed")
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
+def create_record(db: Session, user: User) -> EcoRecord:
     record = EcoRecord(
         user_id=user.id,
         upload_id=None,
@@ -41,9 +27,9 @@ def create_record(db: Session) -> EcoRecord:
     return record
 
 
-def test_update_eco_record_marks_record_reviewed() -> None:
-    db = build_session()
-    record = create_record(db)
+def test_update_eco_record_marks_record_reviewed(db_session: Session, user: User) -> None:
+    db = db_session
+    record = create_record(db, user)
 
     updated = update_eco_record(
         db=db,
@@ -62,9 +48,11 @@ def test_update_eco_record_marks_record_reviewed() -> None:
     assert updated.reviewed_at is not None
 
 
-def test_approve_and_reject_eco_record_set_decision_timestamps() -> None:
-    db = build_session()
-    record = create_record(db)
+def test_approve_and_reject_eco_record_set_decision_timestamps(
+    db_session: Session, user: User
+) -> None:
+    db = db_session
+    record = create_record(db, user)
 
     approved = approve_eco_record(db=db, record=record, notes="Looks good.")
 

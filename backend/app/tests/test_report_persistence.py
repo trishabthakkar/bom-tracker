@@ -1,9 +1,7 @@
 from pathlib import Path
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from app.db.base import Base
 from app.models.document import DocumentSection, EngineeringDocument
 from app.models.report import ImpactReport
 from app.models.upload import UploadedFile
@@ -14,40 +12,7 @@ from app.services.report_persistence import (
     list_reports,
     report_to_structured,
 )
-
-
-def build_session() -> Session:
-    engine = create_engine("sqlite:///:memory:", future=True)
-    Base.metadata.create_all(engine)
-    session_factory = sessionmaker(bind=engine, future=True)
-    return session_factory()
-
-
-def create_bom_upload(db: Session, path: Path) -> tuple[User, UploadedFile]:
-    user = User(
-        email="report@example.com",
-        full_name="Report User",
-        hashed_password="hashed",
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    upload = UploadedFile(
-        uploader_id=user.id,
-        original_filename="bom.csv",
-        stored_filename="report-bom.csv",
-        file_extension=".csv",
-        content_type="text/csv",
-        size_bytes=path.stat().st_size,
-        storage_path=str(path),
-        upload_category="bom",
-        status="stored",
-    )
-    db.add(upload)
-    db.commit()
-    db.refresh(upload)
-    return user, upload
+from app.tests.conftest import MakeUpload
 
 
 def create_indexed_document(db: Session, user: User, upload: UploadedFile) -> EngineeringDocument:
@@ -79,15 +44,17 @@ def create_indexed_document(db: Session, user: User, upload: UploadedFile) -> En
     return document
 
 
-def test_generate_and_save_impact_report_persists_report(tmp_path: Path) -> None:
+def test_generate_and_save_impact_report_persists_report(
+    tmp_path: Path, db_session: Session, user: User, make_upload: MakeUpload
+) -> None:
     path = tmp_path / "bom.csv"
     path.write_text(
         "Part Number,Description,Parent Assembly,Child Assembly,Revision\n"
         "PN-1212,Pressure relief valve,ASM-1000,ASM-1210,C\n",
         encoding="utf-8",
     )
-    db = build_session()
-    user, upload = create_bom_upload(db, path)
+    db = db_session
+    upload = make_upload(user=user, path=path)
     create_indexed_document(db, user, upload)
 
     report = generate_and_save_impact_report(
