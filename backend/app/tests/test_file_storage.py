@@ -1,3 +1,5 @@
+import pytest
+
 from app.services.file_storage import BACKEND_ROOT, get_upload_directory, resolve_storage_path
 
 
@@ -16,3 +18,14 @@ def test_resolve_storage_path_finds_backend_upload_for_legacy_relative_path(
         assert resolve_storage_path("uploads/resolver-test.csv") == stored_file
     finally:
         stored_file.unlink(missing_ok=True)
+
+
+def test_resolve_storage_path_returns_absolute_paths_unchanged(tmp_path) -> None:
+    absolute_path = tmp_path / "somewhere-else.csv"
+
+    assert resolve_storage_path(absolute_path) == absolute_path
+
+
+def test_resolve_storage_path_rejects_relative_paths_outside_upload_directory() -> None:
+    with pytest.raises(FileNotFoundError):
+        resolve_storage_path("../../etc/passwd")

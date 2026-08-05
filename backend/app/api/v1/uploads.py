@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.audit import audit_event
 from app.core.time import utcnow
 from app.db.session import get_db
 from app.models.bom import BomImport
@@ -131,4 +132,3 @@ def _mark_matching_uploads_replaced(
         db.add(report)
 
     db.flush()
-from app.core.audit import audit_event

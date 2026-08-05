@@ -10,7 +10,12 @@ class PdfTextExtractionError(ValueError):
 
 
 def extract_pdf_text(path: str | Path) -> str:
-    file_path = resolve_storage_path(path)
+    try:
+        file_path = resolve_storage_path(path)
+    except FileNotFoundError as error:
+        raise PdfTextExtractionError(
+            "Uploaded PDF file is no longer available. Re-upload the file and try again."
+        ) from error
 
     if not file_path.exists():
         raise PdfTextExtractionError("Uploaded PDF file is no longer available. Re-upload the file and try again.")

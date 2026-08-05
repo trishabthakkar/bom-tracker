@@ -16,7 +16,6 @@ ALLOWED_MIME_TYPES = {
 }
 CHUNK_SIZE_BYTES = 1024 * 1024
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
-PROJECT_ROOT = BACKEND_ROOT.parent
 
 
 class StoredFile:
@@ -57,30 +56,25 @@ def get_upload_directory() -> Path:
 
 
 def resolve_storage_path(storage_path: str | Path) -> Path:
+    """Resolve a stored upload's path.
+
+    Relative paths are stored by store_upload() relative to BACKEND_ROOT
+    (see stored_path_value below), so that is the only base that needs to
+    be tried - no more guessing across candidate directories. The result
+    is required to stay inside the configured upload directory, since
+    nothing else should legitimately be read back through this function.
+    """
     path = Path(storage_path)
     if path.is_absolute():
         return path
 
-    candidates = [
-        Path.cwd() / path,
-        BACKEND_ROOT / path,
-        PROJECT_ROOT / path,
-    ]
+    resolved = (BACKEND_ROOT / path).resolve()
+    upload_directory = get_upload_directory().resolve()
 
-    if path.name:
-        candidates.extend(
-            [
-                get_upload_directory() / path.name,
-                PROJECT_ROOT / "uploads" / path.name,
-                BACKEND_ROOT / "uploads" / path.name,
-            ]
-        )
+    if not resolved.is_relative_to(upload_directory):
+        raise FileNotFoundError(f"Storage path is outside the upload directory: {storage_path}")
 
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-
-    return candidates[0]
+    return resolved
 
 
 async def store_upload(file: UploadFile) -> StoredFile:

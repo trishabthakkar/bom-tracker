@@ -86,12 +86,26 @@ def export_filename(report: ImpactReport, extension: str) -> str:
     return f"impact-report-{report.id}-{timestamp}.{extension}"
 
 
+# This is a single-page PDF (see _simple_pdf): text starts at y=770 with 14pt
+# leading and there is no pagination, so content past roughly this many
+# wrapped lines would otherwise run below the visible page and be silently
+# lost. (770 - 50pt bottom margin) / 14pt leading ~= 51 lines; kept a little
+# under that for margin.
+MAX_PDF_LINES = 48
+
+
 def _simple_pdf(lines: list[str]) -> bytes:
+    wrapped_lines = [wrapped for line in lines for wrapped in _split_for_pdf(line)]
+
+    if len(wrapped_lines) > MAX_PDF_LINES:
+        omitted = len(wrapped_lines) - MAX_PDF_LINES
+        wrapped_lines = wrapped_lines[:MAX_PDF_LINES]
+        wrapped_lines.append(f"... {omitted} more line(s) not shown. See the CSV export for the full report.")
+
     content_lines = ["BT", "/F1 10 Tf", "50 770 Td", "14 TL"]
-    for line in lines:
-        for wrapped in _split_for_pdf(line):
-            content_lines.append(f"({_escape_pdf_text(wrapped)}) Tj")
-            content_lines.append("T*")
+    for wrapped in wrapped_lines:
+        content_lines.append(f"({_escape_pdf_text(wrapped)}) Tj")
+        content_lines.append("T*")
     content_lines.append("ET")
     stream = "\n".join(content_lines).encode("latin-1", errors="replace")
 

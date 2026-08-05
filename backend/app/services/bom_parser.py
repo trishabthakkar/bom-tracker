@@ -78,7 +78,11 @@ class BomParseResult:
 
 
 def parse_bom_file(path: str | Path) -> BomParseResult:
-    file_path = resolve_storage_path(path)
+    try:
+        file_path = resolve_storage_path(path)
+    except FileNotFoundError as error:
+        raise BomParserError("Uploaded BOM file is no longer available. Re-upload the file and try again.") from error
+
     extension = file_path.suffix.lower()
 
     if extension not in SUPPORTED_EXTENSIONS:

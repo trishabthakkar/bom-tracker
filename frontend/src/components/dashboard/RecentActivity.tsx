@@ -9,7 +9,7 @@ export function RecentActivity({ activity }: RecentActivityProps) {
   return (
     <DashboardCard
       title="Recent activity"
-      description="A realistic preview of the future audit trail."
+      description="Recent uploads, imports, and report activity."
       className="xl:col-span-2"
     >
       <div className="space-y-4">

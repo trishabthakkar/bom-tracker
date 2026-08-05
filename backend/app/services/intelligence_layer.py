@@ -110,7 +110,7 @@ def _build_downstream_records(
         DownstreamRecordImpact(
             record_type="procurement",
             impact="Approved parts, alternates, supplier mappings, and purchase records may require updates.",
-            severity=severity if eco.change_type in HIGH_IMPACT_CHANGE_TYPES else "medium",
+            severity=severity,
         ),
         DownstreamRecordImpact(
             record_type="installation_guides",

@@ -80,6 +80,7 @@ def test_no_graph_match_generates_low_risk_signal() -> None:
     assert report.affected_assemblies == []
     assert report.risk.level == "Low"
     assert "No matching part" in " ".join(report.risk.reasons)
+    assert {record.severity for record in report.downstream_records} == {"low"}
 
 
 def test_downstream_records_include_execution_documents() -> None:

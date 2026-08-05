@@ -16,7 +16,7 @@ export function RecentReports({ reports }: RecentReportsProps) {
   return (
     <DashboardCard
       title="Recent reports"
-      description="Placeholder impact reports generated from recent changes."
+      description="Persisted impact reports from recent engineering changes."
     >
       <div className="space-y-3">
         {reports.map((report) => (
