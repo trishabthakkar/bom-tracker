@@ -260,7 +260,7 @@ GET  /api/v1/graph/{upload_id}/paths?source={source}&target={target}
 GET  /api/v1/graph/{upload_id}/stats
 ```
 
-The graph is directed from parent assembly to child assembly, then from child assembly to part number when both values exist. If no child assembly is provided, it falls back to parent assembly to part number.
+The graph is directed from parent assembly to part number (when a parent assembly is present), and from part number to child assembly (when a child assembly is present). A part's ancestors ("affected parents") are everything above it in the assembly hierarchy; its descendants ("affected children") are everything it contains.
 
 ## Engineering Change Parser
 

@@ -52,6 +52,8 @@ export type SavedImpactReportDetail = SavedImpactReport & {
       affected_parents: string[];
       affected_children: string[];
       dependency_paths: string[][];
+      dependency_path_count: number;
+      dependency_paths_truncated: boolean;
     }>;
     downstream_records: Array<{
       record_type: string;

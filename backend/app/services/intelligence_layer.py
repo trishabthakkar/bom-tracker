@@ -1,3 +1,5 @@
+from itertools import islice
+
 import networkx as nx
 
 from app.schemas.eco import ParsedEngineeringChange
@@ -12,11 +14,12 @@ from app.schemas.impact import (
 from app.services.dependency_graph import (
     get_affected_children,
     get_affected_parents,
-    get_dependency_paths,
+    iter_dependency_paths,
 )
 
 HIGH_IMPACT_CHANGE_TYPES = {"replacement", "obsolescence", "removal"}
 MEDIUM_IMPACT_CHANGE_TYPES = {"revision", "addition"}
+MAX_DEPENDENCY_PATHS = 50
 
 
 class IntelligenceLayer:
@@ -71,11 +74,16 @@ def _build_affected_assemblies(
 
     parents = get_affected_parents(graph, affected_part)
     children = get_affected_children(graph, affected_part)
-    paths = [
+
+    path_iterator = (
         path
         for parent in parents
-        for path in get_dependency_paths(graph, parent, affected_part)
-    ]
+        for path in iter_dependency_paths(graph, parent, affected_part)
+    )
+    paths = list(islice(path_iterator, MAX_DEPENDENCY_PATHS + 1))
+    truncated = len(paths) > MAX_DEPENDENCY_PATHS
+    if truncated:
+        paths = paths[:MAX_DEPENDENCY_PATHS]
 
     return [
         AffectedAssembly(
@@ -83,6 +91,8 @@ def _build_affected_assemblies(
             affected_parents=parents,
             affected_children=children,
             dependency_paths=paths,
+            dependency_path_count=len(paths),
+            dependency_paths_truncated=truncated,
         )
     ]
 

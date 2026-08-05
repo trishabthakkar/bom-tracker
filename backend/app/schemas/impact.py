@@ -15,6 +15,8 @@ class AffectedAssembly(BaseModel):
     affected_parents: list[str] = Field(default_factory=list)
     affected_children: list[str] = Field(default_factory=list)
     dependency_paths: list[list[str]] = Field(default_factory=list)
+    dependency_path_count: int = 0
+    dependency_paths_truncated: bool = False
 
 
 class DownstreamRecordImpact(BaseModel):

@@ -227,6 +227,12 @@ export function ReportDetailPage() {
                 <p className="text-muted-foreground">
                   Children: {assembly.affected_children.join(", ") || "-"}
                 </p>
+                <p className="text-muted-foreground">
+                  Dependency paths: {assembly.dependency_path_count}
+                  {assembly.dependency_paths_truncated
+                    ? ` (showing the first ${assembly.dependency_paths.length})`
+                    : ""}
+                </p>
               </div>
             ))}
           </div>
