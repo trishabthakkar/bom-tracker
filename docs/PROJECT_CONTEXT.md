@@ -308,6 +308,37 @@ Development CORS allows both `localhost` and `127.0.0.1` on Vite ports `5173` an
 - Added `docs/RELEASE_CHECKLIST.md` with pre-release, validation, deployment, rollback, and pilot acceptance steps.
 - Added the performance smoke script to CI with a small generated BOM.
 
+### Post-Phase 20 Fixes (Phases 21-29)
+
+A whole-project review in August 2026 found and fixed a set of correctness, security, and
+workflow issues across the codebase. Full detail, verification evidence, and phase-by-phase
+results are in `docs/FIX_PLAN.md` - summary here:
+
+- Phase 21: fixed non-deterministic backend config loading (env vars silently differed
+  depending on which directory a command was run from) and a local Postgres port conflict.
+- Phase 22: fixed inverted dependency graph edges. This affected every impact report,
+  every parent/child lookup, and the Dependency Graph page's root/cycle detection.
+- Phase 23: bounded dependency path enumeration, which could previously produce
+  multi-million-path, 100+MB report payloads on realistic (non-pathological) BOM shapes.
+- Phase 24: fixed a production healthcheck deadlock (the backend container could never
+  report healthy) and made CI validate migrations against Postgres instead of SQLite,
+  which cannot run one of the existing migrations at all.
+- Phase 25: fixed middleware ordering so per-user rate limits actually key by user instead
+  of silently falling back to one shared IP-keyed bucket.
+- Phase 26: made all timestamps timezone-aware; the API previously returned naive
+  timestamps that the frontend misread as local time.
+- Phase 27: consolidated duplicated test fixtures into `backend/app/tests/conftest.py`.
+- Phase 28: removed dead mock data, a misplaced import, an inconsistent risk-severity
+  calculation, and added PDF export truncation for very large reports.
+- Phase 29: consolidated documentation and local workflow (this section, plus
+  `npm run setup` / `npm run dev:all`, and merging the former `QA_PLAN.md` +
+  `RELEASE_CHECKLIST.md` into `docs/QA_AND_RELEASE.md`). Also removed the unbuilt
+  History/Settings placeholder pages from navigation rather than leaving them presented as
+  real workspaces.
+
+The "Remaining Implementation Roadmap" below is renumbered starting at Phase 30 so it does
+not collide with the fix phases above, which are already numbered in git history.
+
 ## Backend Endpoints
 
 Public:
@@ -619,7 +650,7 @@ Current limitation:
 
 ## Remaining Implementation Roadmap
 
-### Phase 21 - Browser E2E and Visual Graph
+### Phase 30 - Browser E2E and Visual Graph
 
 Goal: validate real browser behavior and make dependency analysis easier to inspect.
 
@@ -635,7 +666,7 @@ Definition of done:
 
 - A pilot workflow can be verified through both API-level and browser-level tests.
 
-### Phase 22 - Roles, Teams, and Approvals
+### Phase 31 - Roles, Teams, and Approvals
 
 Goal: support real engineering approval ownership.
 
@@ -651,7 +682,7 @@ Definition of done:
 
 - Multiple users can collaborate on the same BOM/ECO/report workflow with clear authorization boundaries.
 
-### Phase 23 - Durable Processing and Storage
+### Phase 32 - Durable Processing and Storage
 
 Goal: make long-running production workloads resilient.
 
@@ -670,4 +701,4 @@ Definition of done:
 
 ## Recommended Next Phase
 
-Proceed with Phase 21: Browser E2E and Visual Graph.
+Proceed with Phase 30: Browser E2E and Visual Graph.

@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
+    "setup": "bash scripts/setup.sh",
     "dev": "npm --prefix frontend run dev",
+    "dev:all": "npm run db:up && (npm run backend:dev & npm run frontend:dev & wait)",
     "frontend:dev": "npm --prefix frontend run dev",
     "frontend:build": "npm --prefix frontend run build",
     "frontend:lint": "npm --prefix frontend run lint",

@@ -1,71 +1,79 @@
 # AI-Assisted BOM Change Intelligence Layer
 
-A modern full-stack MVP for analyzing engineering changes and downstream BOM impact.
+A full-stack app for analyzing engineering changes (ECOs) and their downstream impact
+across BOMs, assemblies, procurement, and documentation. Upload a bill of materials and an
+engineering change, and it generates a risk-scored impact report showing affected
+assemblies, downstream records, and suggested follow-up actions.
 
-The application currently supports authentication, secure uploads, BOM parsing, persisted BOM imports, BOM comparison, dependency graph analysis, persisted ECO records, ECO review states, optional AI-backed ECO parsing, indexed engineering documents, saved impact reports, report exports, report comments, sign-off tracking, and frontend workflows connected to real backend data.
+## Quick start
 
-## Repository Structure
+```bash
+npm run setup       # backend venv + deps, frontend deps, .env files - safe to re-run
+npm run db:up        # start PostgreSQL
+npm run db:migrate   # apply migrations
+npm run dev:all       # start backend + frontend together
+```
+
+Then open:
+
+- Frontend: <http://localhost:5173>
+- Backend API docs: <http://localhost:8000/docs>
+- Backend health: <http://localhost:8000/api/v1/health>
+
+If Docker reports a permission error on `db:up`, either run Docker from a terminal with
+Docker access, or run `sudo docker compose up -d postgres`.
+
+If port 5432 is already in use by another Postgres install on your machine, copy
+`.env.example` to `.env` at the repo root and set `POSTGRES_PORT` to something free (e.g.
+`55432`) - then update the port in `DATABASE_URL` inside `backend/.env` to match.
+
+To try the app with sample data, see `demo-files/` - `computer-bom.csv`,
+`computer-eco.pdf`, and two indexed documents make up a small, easy-to-follow example
+(a desktop PC BOM with a CPU replacement ECO). The original `demo-bom.csv` /
+`demo-bom-v2.csv` set is a cooling-skid BOM used by the automated QA scripts.
+
+## What it does
+
+- Authentication with JWT cookies, CSRF protection, and rate limiting.
+- Secure CSV/XLSX/PDF uploads with per-category validation.
+- Deterministic BOM parsing and NetworkX-based dependency graph analysis.
+- BOM-to-BOM diffing (added/removed/revised parts, replacement candidates).
+- Engineering change (ECO) parsing from text or uploaded PDF, with a pluggable rule-based
+  or OpenAI-backed parser.
+- ECO review workflow: correct, review, approve, or reject parsed changes.
+- Deterministic impact report generation: affected assemblies, downstream record impact,
+  risk scoring, and suggested updates.
+- Downstream engineering document indexing (installation guides, service manuals, etc.),
+  cross-referenced against affected parts in generated reports.
+- Persisted reports with comments, sign-off workflow, and CSV/PDF export.
+- Background job processing for slower operations (BOM import, graph build, report
+  generation).
+
+See `docs/PROJECT_CONTEXT.md` for the full phase-by-phase history and technical detail
+behind each of these.
+
+## Project structure
 
 ```text
 bom-tracker/
-├── frontend/
-│   ├── src/
-│   │   ├── components/ui/
-│   │   ├── hooks/
-│   │   ├── lib/
-│   │   ├── pages/
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   ├── router.tsx
-│   │   └── styles.css
-│   ├── components.json
-│   ├── package.json
-│   ├── tailwind.config.ts
-│   └── vite.config.ts
-├── backend/
-│   ├── alembic/
-│   │   ├── versions/
-│   │   └── env.py
-│   ├── app/
-│   │   ├── api/v1/
-│   │   ├── core/
-│   │   ├── db/
-│   │   ├── models/
-│   │   ├── repositories/
-│   │   ├── schemas/
-│   │   ├── services/
-│   │   ├── tests/
-│   │   └── main.py
-│   ├── alembic.ini
-│   ├── requirements.txt
-│   └── .env.example
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── QA_PLAN.md
-│   ├── RELEASE_CHECKLIST.md
-│   ├── PRODUCTION.md
-│   └── PROJECT_CONTEXT.md
-├── scripts/
-│   ├── e2e_api_workflow.py
-│   └── performance_smoke.py
+├── frontend/           React + TypeScript + Vite + Tailwind + React Router
+│   └── src/{pages,components,lib,auth}/
+├── backend/             FastAPI + SQLAlchemy + Alembic + PostgreSQL
+│   ├── alembic/versions/
+│   └── app/{api,core,db,models,schemas,services,tests}/
+├── demo-files/          Sample BOMs, ECOs, and documents for trying the app
+├── scripts/              e2e_api_workflow.py, performance_smoke.py, setup.sh
+├── docs/                 See "Documentation" below
+├── docker-compose.yml    Local PostgreSQL
 ├── docker-compose.prod.yml
-├── .gitignore
-├── package.json
-└── README.md
+└── package.json          Root scripts (see below)
 ```
 
-## Frontend
+## Running frontend/backend separately
 
-Stack:
+Useful when you don't want `dev:all`, e.g. to see backend logs on their own.
 
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router
-- shadcn/ui-ready structure via `components.json`, `src/components/ui`, and `src/lib/utils.ts`
-
-Run independently:
+**Frontend only:**
 
 ```bash
 cd frontend
@@ -73,44 +81,7 @@ npm install
 npm run dev
 ```
 
-Useful commands:
-
-```bash
-npm run build
-npm run lint
-npm run preview
-```
-
-Environment:
-
-```bash
-cp .env.example .env
-```
-
-## Backend
-
-Stack:
-
-- FastAPI
-- SQLAlchemy
-- Alembic
-- PostgreSQL for local development, CI, and production
-
-Migrations use PostgreSQL-specific constraint operations (see `alembic/versions/20260709_0006_advanced_bom_eco_workflows.py`), so they do not run against SQLite without batch mode. `DATABASE_URL` can point at SQLite for quick, throwaway experiments that don't touch migrations, but it is not a supported migration target.
-
-Start PostgreSQL:
-
-```bash
-npm run db:up
-```
-
-If Docker reports a permission error, start it from a terminal with Docker access or run:
-
-```bash
-sudo docker compose up -d postgres
-```
-
-Run independently:
+**Backend only:**
 
 ```bash
 cd backend
@@ -122,386 +93,59 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-Useful commands:
+## Testing and QA
 
 ```bash
-npm run db:up
-npm run db:migrate
-npm run db:down
-alembic revision --autogenerate -m "describe change"
-alembic upgrade head
+npm run backend:test   # backend unit/integration tests (pytest)
+npm run lint            # frontend lint
+npm run build            # frontend production build
+npm run qa:perf          # parser/graph/report performance smoke test
+npm run qa:e2e            # live API smoke test - needs a running backend + database
 ```
 
-Default URLs:
+See `docs/QA_AND_RELEASE.md` for the full manual QA checklist, accessibility/security
+review checklists, and release/rollback steps.
 
-- Frontend: `http://localhost:5173` or `http://localhost:5174`
-- Backend API: `http://localhost:8000`
-- Backend docs: `http://localhost:8000/docs`
-- Backend health: `http://localhost:8000/api/v1/health`
-- Backend readiness: `http://localhost:8000/api/v1/ready`
-
-## Authentication
-
-Phase 3 adds JWT-backed authentication endpoints:
-
-```text
-POST /register
-POST /login
-POST /logout
-GET  /me
-```
-
-Run migrations before using authentication:
+## Production
 
 ```bash
-npm run db:migrate
-```
-
-Security defaults:
-
-- Passwords are hashed with bcrypt.
-- JWTs are stored in an HttpOnly cookie named `access_token`.
-- Cookies use `SameSite=Lax`; `Secure` is enabled automatically outside local development.
-- JavaScript does not read or store JWTs.
-- Cookie-authenticated mutation requests use CSRF cookie/header validation.
-- Auth and mutation endpoints have in-memory MVP rate limits.
-- Security headers are added to API responses.
-- Auth, upload, and background job creation events are audit logged.
-- `JWT_SECRET_KEY` must be changed for production.
-- `/me` is protected by JWT middleware plus a current-user dependency.
-
-## Secure Uploads
-
-Phase 5 adds authenticated file uploads for future parsing modules.
-
-Supported file types:
-
-- `.csv`
-- `.xlsx`
-- `.pdf`
-
-Default upload limit:
-
-- `25 MB`
-
-Backend endpoints:
-
-```text
-POST /api/v1/uploads
-GET  /api/v1/uploads
-```
-
-Run migrations before using uploads:
-
-```bash
-cd backend
-source .venv/bin/activate
-alembic upgrade head
-```
-
-Upload files are stored locally under `backend/uploads` by default. The directory is ignored by git.
-
-Upload pages include a `Replace files with the same name` option. When enabled, older active uploads with the same original filename and category are marked as `replaced`, and older BOM imports/reports tied to that upload are archived where supported.
-
-Project context is tracked in:
-
-```text
-docs/PROJECT_CONTEXT.md
-```
-
-Architecture documentation is tracked in:
-
-```text
-docs/ARCHITECTURE.md
-```
-
-User-facing feature documentation is tracked in:
-
-```text
-docs/USER_GUIDE.md
-```
-
-## BOM Parser
-
-Phase 6 adds deterministic BOM parsing for uploaded CSV/XLSX files.
-
-Endpoint:
-
-```text
-POST /api/v1/bom/parse/{upload_id}
-```
-
-The parser extracts:
-
-- part number
-- description
-- parent assembly
-- child assembly
-- revision
-
-Run parser tests:
-
-```bash
-cd backend
-source .venv/bin/activate
-pytest app/tests
-```
-
-## Dependency Graph
-
-Phase 7 adds NetworkX-based dependency graph analysis for parsed BOM files.
-
-Endpoints:
-
-```text
-POST /api/v1/graph/build/{upload_id}
-GET  /api/v1/graph/{upload_id}/parents/{part_number}
-GET  /api/v1/graph/{upload_id}/children/{part_number}
-GET  /api/v1/graph/{upload_id}/paths?source={source}&target={target}
-GET  /api/v1/graph/{upload_id}/stats
-```
-
-The graph is directed from parent assembly to part number (when a parent assembly is present), and from part number to child assembly (when a child assembly is present). A part's ancestors ("affected parents") are everything above it in the assembly hierarchy; its descendants ("affected children") are everything it contains.
-
-## Engineering Change Parser
-
-Phase 8 adds structured ECO parsing for plain text and uploaded PDFs.
-
-Endpoints:
-
-```text
-POST /api/v1/eco/parse-text
-POST /api/v1/eco/parse-upload/{upload_id}
-```
-
-Extracted fields:
-
-- change type
-- old part
-- new part
-- reason
-- effective date
-
-The parser uses an LLM abstraction layer. The default provider is local and rule-based, and an optional OpenAI provider is available through environment configuration:
-
-```text
-LLM_PROVIDER=openai
-OPENAI_API_KEY=your_api_key
-OPENAI_MODEL=gpt-4.1-mini
-LLM_FALLBACK_TO_RULE_BASED=true
-```
-
-If fallback is enabled and the remote provider fails, ECO parsing falls back to deterministic rule-based extraction.
-
-## Intelligence Layer
-
-Phase 9 adds deterministic impact report generation. Phase 11 adds persisted impact reports.
-
-Endpoint:
-
-```text
-POST /api/v1/intelligence/impact-report
-POST /api/v1/reports/impact-report
-GET  /api/v1/reports
-GET  /api/v1/reports/{report_id}
-```
-
-Request body:
-
-```json
-{
-  "bom_upload_id": 1,
-  "eco_text": "Replace old part PN-100 with new part PN-200. Reason: supplier obsolescence. Effective date: 2026-08-15."
-}
-```
-
-The response includes affected assemblies, downstream record impacts, suggested updates, and risk assessment. Use `/api/v1/reports/impact-report` when the report should be saved and visible in the Reports page.
-
-## Persisted Engineering Data
-
-Phase 11 persists normalized engineering records. Phase 12 connects the main frontend workflows to those records.
-
-Endpoints:
-
-```text
-POST /api/v1/bom-imports/from-upload/{upload_id}
-GET  /api/v1/bom-imports
-GET  /api/v1/bom-imports/{import_id}
-POST /api/v1/bom-imports/diff
-POST /api/v1/eco-records/parse-text
-POST /api/v1/eco-records/parse-upload/{upload_id}
-GET  /api/v1/eco-records
-GET  /api/v1/eco-records/{record_id}
-PATCH /api/v1/eco-records/{record_id}
-POST /api/v1/eco-records/{record_id}/review
-POST /api/v1/eco-records/{record_id}/approve
-POST /api/v1/eco-records/{record_id}/reject
-POST /api/v1/reports/impact-report
-GET  /api/v1/reports
-GET  /api/v1/reports/{report_id}
-GET  /api/v1/reports/{report_id}/export.csv
-GET  /api/v1/reports/{report_id}/export.pdf
-PATCH /api/v1/reports/{report_id}/review
-POST /api/v1/reports/{report_id}/comments
-```
-
-The frontend now shows live dashboard metrics, normalized BOM import status, BOM comparison, saved ECO records, ECO correction/review/approval controls, saved report history, report detail pages, report generation from a BOM import selector or approved ECO record, automatic ECO PDF parsing after upload, report export/review/comment controls, and a dependency graph explorer.
-
-## BOM Compare and ECO Review
-
-Phase 17 adds advanced workflow support:
-
-- same-filename BOM imports receive simple `vN` labels
-- the BOM Compare page detects added, removed, revised, unchanged, and likely replaced parts
-- ECO records can be corrected after parsing
-- ECO records can be marked reviewed, approved, or rejected
-- correction notes, approval notes, and decision timestamps are persisted
-
-Run migrations before using these features:
-
-```bash
-npm run db:migrate
-```
-
-## Report Export and Collaboration
-
-Phase 18 adds:
-
-- CSV export for saved impact reports
-- simple PDF export for saved impact reports
-- report comments
-- report review statuses: `draft`, `in_review`, `changes_requested`, `signed_off`
-- sign-off notes and timestamps
-- report generation from approved ECO records
-
-Run migrations before using these features:
-
-```bash
-npm run db:migrate
-```
-
-## Downstream Documents
-
-Phase 16 adds PDF engineering document indexing for manuals and downstream records.
-
-Endpoints:
-
-```text
-POST /api/v1/documents/from-upload/{upload_id}
-GET  /api/v1/documents
-GET  /api/v1/documents/{document_id}
-GET  /api/v1/documents/affected/{part_number}
-```
-
-The Documents page supports PDF upload and indexing for installation guides, commissioning procedures, service manuals, procurement records, and generic engineering documents. Indexed sections store detected part references, and saved impact reports include affected document sections when an ECO references a matching part.
-
-## Background Jobs
-
-Phase 13 adds persisted background jobs for workflows that can become slow with larger files.
-
-Endpoints:
-
-```text
-POST /api/v1/jobs/bom-imports/from-upload/{upload_id}
-POST /api/v1/jobs/eco-records/parse-upload/{upload_id}
-POST /api/v1/jobs/graph/build/{upload_id}
-POST /api/v1/jobs/reports/impact-report
-GET  /api/v1/jobs
-GET  /api/v1/jobs/{job_id}
-```
-
-Job statuses:
-
-- `queued`
-- `processing`
-- `completed`
-- `failed`
-
-The MVP worker uses FastAPI `BackgroundTasks`. Run migrations before using job endpoints:
-
-```bash
-npm run db:migrate
-```
-
-## Production Infrastructure
-
-Phase 19 adds deployable container infrastructure:
-
-- `backend/Dockerfile`
-- `frontend/Dockerfile`
-- `frontend/nginx.conf`
-- `docker-compose.prod.yml`
-- `.env.production.example`
-- `.github/workflows/ci.yml`
-- `docs/PRODUCTION.md`
-
-Create production environment configuration:
-
-```bash
-cp .env.production.example .env.production
-```
-
-Set strong values for `POSTGRES_PASSWORD`, `JWT_SECRET_KEY`, and `BACKEND_CORS_ORIGINS`.
-
-Build and run production services:
-
-```bash
+cp .env.production.example .env.production   # then set real secrets
 npm run prod:build
 npm run prod:up
 ```
 
-Readiness endpoint:
+See `docs/PRODUCTION.md` for deployment, health checks, backups, restore steps, and
+security notes.
 
-```text
-GET /api/v1/ready
-```
-
-See `docs/PRODUCTION.md` for deployment, health checks, backups, restore steps, and security notes.
-
-## QA and Release Readiness
-
-Phase 20 adds repeatable QA assets:
-
-- `demo-files/demo-bom-v2.csv` for BOM version comparison.
-- `backend/app/tests/test_end_to_end_workflow.py` for a service-level full workflow test.
-- `scripts/performance_smoke.py` for parser and graph performance checks.
-- `scripts/e2e_api_workflow.py` for a live API smoke test against a running backend.
-- `docs/QA_PLAN.md` for automated, manual, accessibility, and security checks.
-- `docs/RELEASE_CHECKLIST.md` for deployment validation and rollback steps.
-
-Run the local QA commands:
+## All root scripts
 
 ```bash
-npm run backend:test
-npm run qa:perf
+npm run setup           # one-time local environment setup
+npm run dev              # frontend only
+npm run dev:all           # postgres + backend + frontend together
+npm run build             # frontend production build
+npm run lint               # frontend lint
+npm run backend:dev        # backend dev server
+npm run backend:test        # backend test suite
+npm run qa:e2e                # live API smoke test
+npm run qa:perf                 # performance smoke test
+npm run db:up                    # start PostgreSQL
+npm run db:migrate                 # apply migrations
+npm run db:reset-data                # clear app data + stored uploads (local dev only)
+npm run db:down                        # stop PostgreSQL
+npm run prod:build                      # build production images
+npm run prod:up                          # start production stack
+npm run prod:logs                         # tail production logs
+npm run prod:down                          # stop production stack
 ```
 
-Run the live API smoke test after PostgreSQL, migrations, and the backend are running:
+## Documentation
 
-```bash
-npm run qa:e2e
-```
-
-## Root Scripts
-
-From the repository root:
-
-```bash
-npm run dev
-npm run build
-npm run lint
-npm run backend:dev
-npm run backend:test
-npm run qa:e2e
-npm run qa:perf
-npm run db:up
-npm run db:migrate
-npm run db:reset-data
-npm run db:down
-npm run prod:build
-npm run prod:up
-npm run prod:logs
-npm run prod:down
-```
-
-`npm run db:reset-data` is a local development helper. It clears app database rows and stored upload files so you can start testing from a fresh state.
+- `docs/PROJECT_CONTEXT.md` - product context, full phase-by-phase history, feature
+  detail, security decisions, and roadmap. The most complete reference in this repo.
+- `docs/ARCHITECTURE.md` - system architecture and request flows.
+- `docs/USER_GUIDE.md` - user-facing feature guide.
+- `docs/PRODUCTION.md` - deployment operations.
+- `docs/QA_AND_RELEASE.md` - QA checklists and release/rollback steps.
+- `docs/FIX_PLAN.md` - record of the August 2026 whole-project review and the fix phases
+  that followed it.

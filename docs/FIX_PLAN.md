@@ -19,8 +19,8 @@ Every measured value in this document was produced by running the code, not by i
 | 25 | Middleware ordering / rate limiting | No | Done (2026-08-05) |
 | 26 | Timezone-aware timestamps | No | Done (2026-08-05) |
 | 27 | Consolidate test fixtures | No | Done (2026-08-05) |
-| 28 | Remove rot | No | Not started |
-| 29 | Consolidate workflow and docs | No | Not started |
+| 28 | Remove rot | No | Done (2026-08-05) |
+| 29 | Consolidate workflow and docs | No | Done (2026-08-05) |
 
 Phases 21, 22, and 24 are the ones that change whether the project works. If only three
 are done, do those.
@@ -731,6 +731,62 @@ Small, independent, and safe. Batch into one commit.
   with 14pt leading and has no pagination, so beyond roughly 55 lines content runs off the
   page and is silently invisible. Paginate, or truncate with an explicit "N more items" line.
 
+### Result (2026-08-05)
+
+All five items implemented, plus two related fixes found while verifying the first one:
+
+- `frontend/src/data/dashboardData.ts` - deleted `metrics`, `recentUploads`, `recentReports`,
+  `recentActivity` (confirmed zero value-imports first). Kept the types, which are used.
+- **Found while checking that file**: two dashboard components still carried stale
+  descriptive copy from before they were wired to real data -
+  `RecentReports.tsx` said *"Placeholder impact reports generated from recent changes"* and
+  `RecentActivity.tsx` said *"A realistic preview of the future audit trail"* (both literally
+  describing themselves as mockups). Confirmed via `HomePage.tsx` that both components
+  receive real API-derived data (`reports.slice(0, 3).map(toRecentReport)`,
+  `buildActivity(uploads, reports, imports, ecoRecords)`), so this was pure copy drift, not
+  a data-wiring gap. Reworded to match the accurate, already-correct style of the sibling
+  `RecentUploads.tsx` description.
+- `backend/app/api/v1/uploads.py` - moved `from app.core.audit import audit_event` to the
+  top import block.
+- `backend/app/services/file_storage.py` - `resolve_storage_path` no longer guesses across
+  six candidate directories. Checked first what `storage_path` values are actually stored:
+  `store_upload()` always writes a path relative to `BACKEND_ROOT` locally (confirmed
+  against the real `uploaded_files` table - every row was `uploads/<uuid>.<ext>`), so that
+  is now the only base tried. Absolute paths (the production/Docker case, and every test
+  fixture using `tmp_path`) are returned unchanged, as before. Added a containment check -
+  a relative path that resolves outside the configured upload directory now raises
+  `FileNotFoundError` instead of being silently returned anyway. `PROJECT_ROOT`, only used
+  by the deleted candidate list, was removed as now-dead code.
+  `bom_parser.py`/`pdf_text_extractor.py` translate that `FileNotFoundError` into their
+  existing domain error types (`BomParserError`/`PdfTextExtractionError`), matching how they
+  already handle a missing file, rather than letting a raw exception reach an unhandled 500.
+- `backend/app/services/intelligence_layer.py` - `procurement`'s downstream-record severity
+  now uses the already-computed `severity` value directly, matching its three siblings,
+  instead of re-deriving from `change_type` alone and ignoring the `not impacted -> "low"`
+  override.
+- `backend/app/services/report_exports.py` - took the truncation option over full
+  pagination (lower risk than restructuring the hand-rolled single-page PDF object model
+  into multiple pages). Added `MAX_PDF_LINES = 48` and truncate wrapped lines past that,
+  appending "... N more line(s) not shown. See the CSV export for the full report."
+
+Verification performed:
+
+- `pytest`: 52 passed (48 baseline + 4 new: 2 for the path containment check, 1 for the
+  procurement severity fix, 1 file with 2 tests for PDF truncation).
+- New regression tests written to fail against the pre-fix code first where practical: the
+  procurement-severity assertion (`{record.severity for record in ...} == {"low"}`) would
+  have seen `{"low", "medium"}` under the old logic.
+- Live end-to-end against the running app: uploaded a new file (confirmed `audit_event`
+  still logs - `event=upload.created outcome=success ...` appeared in the server log) and
+  built a dependency graph from it, which exercises `parse_bom_file` ->
+  `resolve_storage_path` on a real, current-format relative path end to end.
+  Fetched an existing report's PDF export and confirmed it is unaffected (no truncation
+  notice) since it is well under the 48-line cap.
+- Confirmed visually in the browser: the dashboard now shows "Persisted impact reports from
+  recent engineering changes." and "Recent uploads, imports, and report activity." in place
+  of the old placeholder/mockup copy.
+- Frontend `tsc -b` and `eslint` clean.
+
 ---
 
 ## Phase 29 - Consolidate the workflow and docs
@@ -749,3 +805,65 @@ reader who wants to run the project has to reconstruct the steps from 20 phase s
 - Decide on `History` and `Settings`. Both still render `PagePlaceholder` ("intentionally
   empty until the next implementation phase") while the sidebar presents them as
   workspaces. Either build them or remove the nav entries.
+
+### Result (2026-08-05)
+
+Implemented as specified, plus fixes to real stale-documentation problems found while doing
+the doc consolidation - not just moving text around.
+
+- Asked the user directly which way to resolve History/Settings rather than assuming - a
+  genuine product decision, not a mechanical fix. Chose to remove them: dropped the two nav
+  entries, the two routes, the two page files, the now-dead `PagePlaceholder` component
+  (confirmed it had no other callers), and the settings gear icon in `Navbar.tsx` (its only
+  purpose was linking to the now-removed `/settings` route).
+- **Found while doing this**: `docs/USER_GUIDE.md` had two full sections (`## History Page`,
+  `## Settings Page`) documenting these as real, if unfinished, pages - telling a reader to
+  open `/history` and `/settings`, routes that no longer exist. Removed both sections, the
+  sidebar-pages list entry, and the "settings icon" bullet in the navbar description.
+  Left `## Upload History` alone - confirmed it is an unrelated, still-existing feature (the
+  upload history list on the Upload BOM/ECO pages, not the removed nav page).
+- **Found while writing the README's phase-history pointer**: `docs/PROJECT_CONTEXT.md`'s
+  own "Remaining Implementation Roadmap" already used "Phase 21", "Phase 22", "Phase 23" for
+  proposed *future* feature work (Browser E2E, Roles/Teams, Durable Processing) - colliding
+  with this fix plan's Phase 21-29, which are already completed and already numbered in git
+  history. Renumbered the roadmap phases to 30/31/32 (safe to renumber - they were only ever
+  proposals, never implemented) and added a "Post-Phase 20 Fixes (Phases 21-29)" summary
+  section linking back to this document, matching this file's existing "Post-Phase 12 Debug
+  Fixes" precedent for post-hoc fix summaries.
+- `npm run setup` (new `scripts/setup.sh`) - idempotent backend venv + deps, frontend deps,
+  and `.env` file creation.
+- `npm run dev:all` - starts Postgres, backend, and frontend together
+  (`npm run db:up && (npm run backend:dev & npm run frontend:dev & wait)`). Used the shell's
+  own job control rather than adding a new dependency like `concurrently`, consistent with
+  this repo not having any devDependencies at the root.
+- `docs/QA_AND_RELEASE.md` (new) merges `QA_PLAN.md` and `RELEASE_CHECKLIST.md`; both
+  deleted. Updated `docs/PRODUCTION.md`'s cross-reference to the merged file.
+- `README.md` rewritten from 507 lines organized by build phase to ~190 lines organized by
+  task (quick start, what it does, structure, testing, production, docs map). Detailed
+  phase-by-phase feature history stays in `docs/PROJECT_CONTEXT.md`, which already had it in
+  more complete form.
+
+Verification performed:
+
+- `npm run setup` tested against a genuinely fresh checkout, not just re-run in an
+  already-configured environment: copied the working tree to a scratch directory excluding
+  everything gitignored (`.venv`, `node_modules`, `.env` files - confirmed none were
+  present first), ran `npm run setup` there, then confirmed the result actually works, not
+  just that the script exited 0: the freshly-created venv could run `pytest` and all 52
+  tests passed.
+- `npm run dev:all` tested for real: stopped the standalone backend/frontend processes,
+  ran the single command, and confirmed all three services came up
+  (`docker compose ps` healthy, `/api/v1/health` OK, frontend 200). This surfaced a real
+  live instance of the exact port-shadowing bug documented in Phase 21 (no root `.env`
+  present, so Postgres started on the default 5432, which this machine's native Postgres
+  install shadows) - correctly caught by the `/ready` endpoint returning `503` instead of a
+  false `200` (Phase 24). Fixed by creating the root `.env` with `POSTGRES_PORT=55432` per
+  the documented mechanism; confirmed the existing account data survived the container
+  recreation.
+- Confirmed live in the browser: sidebar now shows exactly 7 links, no History/Settings;
+  navbar no longer has the settings gear icon.
+- Repo-wide grep for `/history` and `/settings` route references after all edits: zero
+  remaining matches, including in docs.
+- Frontend `tsc -b`, `eslint`, and `vite build` (not just typecheck - the production build
+  itself) all clean. Backend `pytest`: 52 passed, unaffected (no backend logic changed in
+  this phase).

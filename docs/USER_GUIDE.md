@@ -156,7 +156,6 @@ After logging in, the main app includes:
 - footer
 - dark mode toggle
 - notifications icon
-- settings icon
 - user avatar
 - logout button
 
@@ -169,8 +168,6 @@ Sidebar pages:
 - Reports
 - Dependency Graph
 - Documents
-- History
-- Settings
 
 ### How It Works
 
@@ -879,42 +876,6 @@ The backend stores jobs in the `jobs` table with these statuses:
 - `failed`
 
 The MVP worker uses FastAPI `BackgroundTasks`. This keeps long-running work out of the initial API response while avoiding a separate worker dependency during local development.
-
-## History Page
-
-### How To Use It
-
-Open:
-
-```text
-/history
-```
-
-### Current Status
-
-This page is a placeholder.
-
-### Planned Behavior
-
-History will eventually show upload, parsing, graph, ECO, and report generation events.
-
-## Settings Page
-
-### How To Use It
-
-Open:
-
-```text
-/settings
-```
-
-### Current Status
-
-This page is a placeholder.
-
-### Planned Behavior
-
-Settings will eventually support user preferences, organization settings, AI provider configuration, and security settings.
 
 ## Dark Mode
 

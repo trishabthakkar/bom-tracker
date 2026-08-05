@@ -1,5 +1,5 @@
-import { Bell, LogOut, Menu, Moon, Settings, Sun } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Bell, LogOut, Menu, Moon, Sun } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
 
@@ -64,11 +64,6 @@ export function Navbar({
             aria-label="Toggle dark mode"
           >
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
-          <Button asChild type="button" variant="ghost" size="icon" aria-label="Open settings">
-            <NavLink to="/settings">
-              <Settings className="h-5 w-5" />
-            </NavLink>
           </Button>
           <button
             type="button"

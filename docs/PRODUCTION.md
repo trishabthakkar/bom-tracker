@@ -52,7 +52,7 @@ GET /api/v1/ready
 
 Use readiness for load balancers and container health checks.
 
-Use `docs/RELEASE_CHECKLIST.md` for the fuller release checklist, rollback plan, and pilot acceptance criteria.
+Use `docs/QA_AND_RELEASE.md` for the fuller release checklist, rollback plan, and pilot acceptance criteria.
 
 ## Logs
 
