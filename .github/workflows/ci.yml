@@ -12,6 +12,20 @@ jobs:
     defaults:
       run:
         working-directory: .
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: bom_tracker_ci
+          POSTGRES_USER: bom_tracker
+          POSTGRES_PASSWORD: bom_tracker_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bom_tracker -d bom_tracker_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -22,7 +36,7 @@ jobs:
       - name: Install backend dependencies
         run: |
           python -m venv backend/.venv
-          backend/.venv/bin/pip install -r backend/requirements.txt
+          backend/.venv/bin/pip install -r backend/requirements-dev.txt
 
       - name: Compile backend
         run: python -m compileall backend/app backend/alembic
@@ -38,7 +52,7 @@ jobs:
 
       - name: Validate Alembic migrations
         env:
-          DATABASE_URL: sqlite:////tmp/bom_tracker_ci.sqlite
+          DATABASE_URL: postgresql+psycopg://bom_tracker:bom_tracker_ci_password@localhost:5432/bom_tracker_ci
           JWT_SECRET_KEY: ci-only-secret
         run: |
           cd backend
