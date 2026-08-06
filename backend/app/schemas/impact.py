@@ -39,6 +39,7 @@ class DocumentSectionImpact(BaseModel):
     section_id: int
     heading: str
     matched_parts: list[str] = Field(default_factory=list)
+    inferred_parts: list[str] = Field(default_factory=list)
     excerpt: str
     severity: str
 

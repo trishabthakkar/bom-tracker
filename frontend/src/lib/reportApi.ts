@@ -70,6 +70,7 @@ export type SavedImpactReportDetail = SavedImpactReport & {
       section_id: number;
       heading: string;
       matched_parts: string[];
+      inferred_parts: string[];
       excerpt: string;
       severity: string;
     }>;

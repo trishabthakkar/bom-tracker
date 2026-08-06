@@ -1,6 +1,7 @@
 import re
 from datetime import date, datetime
 
+from app.schemas.document import PartCatalogEntry, SectionForExtraction
 from app.schemas.eco import ParsedEngineeringChange
 from app.schemas.impact import ReportSummary, StructuredImpactReport
 from app.services.llm.base import BaseLLMProvider
@@ -26,6 +27,15 @@ class RuleBasedLLMProvider(BaseLLMProvider):
 
     def summarize_impact_report(self, report: StructuredImpactReport) -> ReportSummary:
         return ReportSummary(text=report.summary, source="rule_based")
+
+    def extract_part_references(
+        self,
+        *,
+        sections: list[SectionForExtraction],
+        catalog: list[PartCatalogEntry],
+    ) -> dict[int, list[str]]:
+        """No semantic inference without a model; the regex pass already ran."""
+        return {}
 
 
 def _extract_change_type(text: str) -> str | None:

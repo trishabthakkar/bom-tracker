@@ -19,6 +19,7 @@ class EngineeringDocument(Base):
     status: Mapped[str] = mapped_column(String(40), default="indexed", nullable=False)
     section_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     part_references: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    inferred_part_references: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -38,4 +39,5 @@ class DocumentSection(Base):
     heading: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     part_references: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    inferred_part_references: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

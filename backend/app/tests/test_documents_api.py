@@ -51,3 +51,54 @@ def test_read_affected_document_sections_returns_matches(
     assert response.part_number == "PN-1212"
     assert response.sections[0].heading == "Relief valve replacement"
     assert response.sections[0].matched_parts == ["PN-1212"]
+
+
+def test_read_affected_document_sections_includes_inferred_only_matches(
+    db_session: Session, user: User, make_upload: MakeUpload
+) -> None:
+    """A section that never names the part explicitly still surfaces, flagged as inferred."""
+    db = db_session
+    upload = make_upload(
+        user=user,
+        filename="service-manual.pdf",
+        category="document",
+        storage_path="uploads/service-manual.pdf",
+    )
+
+    document = EngineeringDocument(
+        user_id=user.id,
+        upload_id=upload.id,
+        filename=upload.original_filename,
+        document_type="service_manual",
+        title="Service Manual",
+        status="indexed",
+        section_count=1,
+        part_references=[],
+        inferred_part_references=["PN-1212"],
+    )
+    db.add(document)
+    db.flush()
+    db.add(
+        DocumentSection(
+            document_id=document.id,
+            user_id=user.id,
+            upload_id=upload.id,
+            section_index=1,
+            heading="Valve seating check",
+            content="Inspect the pressure relief valve for seating wear.",
+            part_references=[],
+            inferred_part_references=["PN-1212"],
+        )
+    )
+    db.commit()
+
+    response = read_affected_document_sections(
+        part_number="PN-1212",
+        db=db,
+        current_user=user,
+    )
+
+    assert len(response.sections) == 1
+    assert response.sections[0].heading == "Valve seating check"
+    assert response.sections[0].matched_parts == []
+    assert response.sections[0].inferred_parts == ["PN-1212"]

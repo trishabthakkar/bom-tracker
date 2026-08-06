@@ -221,26 +221,37 @@ def _build_document_section_impacts(
 ) -> list[DocumentSectionImpact]:
     impacts: list[DocumentSectionImpact] = []
 
-    for document, section, matched_parts in find_sections_referencing_parts(
+    for match in find_sections_referencing_parts(
         db=db,
         user_id=user_id,
         part_numbers=part_numbers,
     ):
+        document = match.document
         impacts.append(
             DocumentSectionImpact(
                 document_id=document.id,
                 document_title=document.title,
                 filename=document.filename,
                 document_type=document.document_type,
-                section_id=section.id,
-                heading=section.heading,
-                matched_parts=matched_parts,
-                excerpt=_excerpt(section.content),
-                severity="high" if document.document_type in {"service_manual", "installation_guide"} else "medium",
+                section_id=match.section.id,
+                heading=match.section.heading,
+                matched_parts=match.matched_parts,
+                inferred_parts=match.inferred_parts,
+                excerpt=_excerpt(match.section.content),
+                severity=_section_severity(document.document_type, match.matched_parts),
             )
         )
 
     return impacts
+
+
+def _section_severity(document_type: str, matched_parts: list[str]) -> str:
+    """Sections matched only by inferred reference stay below high severity:
+    the link is a semantic judgement, not an explicit part number in the text."""
+    if document_type not in {"service_manual", "installation_guide"}:
+        return "medium"
+
+    return "high" if matched_parts else "medium"
 
 
 def _excerpt(content: str, limit: int = 260) -> str:

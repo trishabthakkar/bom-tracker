@@ -1,8 +1,9 @@
 from app.schemas.eco import ParsedEngineeringChange
 from app.schemas.impact import ReportSummary, RiskAssessment, StructuredImpactReport
-from app.services.llm.base import BaseLLMProvider, LLMProviderError
+from app.services.llm.base import LLMProviderError
 from app.services.llm.rule_based import RuleBasedLLMProvider
 from app.services.report_summarizer import ReportSummarizer
+from app.tests.conftest import StubLLMProvider
 
 
 def build_report(summary: str = "Replacement for PN-1212 has high risk.") -> StructuredImpactReport:
@@ -33,10 +34,7 @@ def test_summarize_uses_rule_based_pass_through_summary() -> None:
 
 
 def test_summarize_uses_provider_abstraction() -> None:
-    class FakeProvider(BaseLLMProvider):
-        def parse_engineering_change(self, text: str) -> ParsedEngineeringChange:
-            raise NotImplementedError
-
+    class FakeProvider(StubLLMProvider):
         def summarize_impact_report(self, report: StructuredImpactReport) -> ReportSummary:
             return ReportSummary(text=f"AI summary for {report.affected_part}", source="fake")
 
@@ -47,10 +45,7 @@ def test_summarize_uses_provider_abstraction() -> None:
 
 
 def test_summarize_falls_back_to_rule_based_on_llm_failure() -> None:
-    class FailingProvider(BaseLLMProvider):
-        def parse_engineering_change(self, text: str) -> ParsedEngineeringChange:
-            raise NotImplementedError
-
+    class FailingProvider(StubLLMProvider):
         def summarize_impact_report(self, report: StructuredImpactReport) -> ReportSummary:
             raise LLMProviderError("remote provider failed")
 

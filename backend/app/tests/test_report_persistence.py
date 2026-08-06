@@ -7,6 +7,7 @@ from app.models.report import ImpactReport
 from app.models.upload import UploadedFile
 from app.models.user import User
 from app.services.report_persistence import (
+    _section_severity,
     generate_and_save_impact_report,
     get_report,
     list_reports,
@@ -80,3 +81,12 @@ def test_generate_and_save_impact_report_persists_report(
     assert len(structured.affected_document_sections) == 1
     assert structured.affected_document_sections[0].heading == "Relief valve replacement"
     assert structured.downstream_records
+
+
+def test_inferred_only_matches_do_not_claim_high_severity() -> None:
+    """An inferred link is a semantic judgement, so it should not read as
+    strongly as a section that names the part outright."""
+    assert _section_severity("service_manual", ["PN-1212"]) == "high"
+    assert _section_severity("service_manual", []) == "medium"
+    assert _section_severity("installation_guide", []) == "medium"
+    assert _section_severity("procurement_record", ["PN-1212"]) == "medium"

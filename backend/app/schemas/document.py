@@ -3,6 +3,19 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class PartCatalogEntry(BaseModel):
+    """A part the user has actually imported, used to ground reference inference."""
+
+    part_number: str
+    description: str | None = None
+
+
+class SectionForExtraction(BaseModel):
+    section_index: int
+    heading: str
+    content: str
+
+
 class DocumentSectionRead(BaseModel):
     id: int
     document_id: int
@@ -11,6 +24,7 @@ class DocumentSectionRead(BaseModel):
     heading: str
     content: str
     part_references: list[str] = Field(default_factory=list)
+    inferred_part_references: list[str] = Field(default_factory=list)
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -25,6 +39,7 @@ class EngineeringDocumentRead(BaseModel):
     status: str
     section_count: int
     part_references: list[str] = Field(default_factory=list)
+    inferred_part_references: list[str] = Field(default_factory=list)
     created_at: datetime
     archived_at: datetime | None = None
 
@@ -47,6 +62,7 @@ class AffectedDocumentSection(BaseModel):
     section_id: int
     heading: str
     matched_parts: list[str] = Field(default_factory=list)
+    inferred_parts: list[str] = Field(default_factory=list)
     excerpt: str
 
 

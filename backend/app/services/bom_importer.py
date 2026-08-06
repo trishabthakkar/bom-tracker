@@ -5,6 +5,7 @@ from app.core.time import utcnow
 from app.models.bom import AssemblyRelationship, BomImport, BomPart
 from app.models.graph_snapshot import GraphSnapshot
 from app.models.upload import UploadedFile
+from app.schemas.document import PartCatalogEntry
 from app.services.bom_parser import BomParserError, ParsedBomItem, parse_bom_file
 from app.services.dependency_graph import build_dependency_graph
 from app.services.graph_snapshots import create_graph_snapshot
@@ -112,6 +113,33 @@ def get_import_parts(*, db: Session, bom_import_id: int, user_id: int) -> list[B
             .order_by(BomPart.row_number.asc())
         )
     )
+
+
+def get_user_part_catalog(*, db: Session, user_id: int, limit: int = 400) -> list[PartCatalogEntry]:
+    """Distinct parts across the user's live imports, newest import first.
+
+    Used to ground document part-reference inference: a description can only
+    resolve to a part the user has actually imported."""
+    rows = db.execute(
+        select(BomPart.part_number, BomPart.description)
+        .join(BomImport, BomImport.id == BomPart.bom_import_id)
+        .where(BomPart.user_id == user_id)
+        .where(BomImport.archived_at.is_(None))
+        .order_by(BomImport.created_at.desc(), BomPart.row_number.asc())
+    ).all()
+
+    catalog: list[PartCatalogEntry] = []
+    seen: set[str] = set()
+    for part_number, description in rows:
+        key = part_number.strip().upper()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        catalog.append(PartCatalogEntry(part_number=part_number, description=description))
+        if len(catalog) >= limit:
+            break
+
+    return catalog
 
 
 def get_import_relationships(

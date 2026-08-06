@@ -79,16 +79,17 @@ def read_affected_document_sections(
         part_number=part_number,
         sections=[
             AffectedDocumentSection(
-                document_id=document.id,
-                document_title=document.title,
-                filename=document.filename,
-                document_type=document.document_type,
-                section_id=section.id,
-                heading=section.heading,
-                matched_parts=matched_parts,
-                excerpt=_excerpt(section.content),
+                document_id=match.document.id,
+                document_title=match.document.title,
+                filename=match.document.filename,
+                document_type=match.document.document_type,
+                section_id=match.section.id,
+                heading=match.section.heading,
+                matched_parts=match.matched_parts,
+                inferred_parts=match.inferred_parts,
+                excerpt=_excerpt(match.section.content),
             )
-            for document, section, matched_parts in matches
+            for match in matches
         ],
     )
 

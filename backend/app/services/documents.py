@@ -1,15 +1,31 @@
+from dataclasses import dataclass
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.time import utcnow
 from app.models.document import DocumentSection, EngineeringDocument
 from app.models.upload import UploadedFile
+from app.schemas.document import SectionForExtraction
+from app.services.bom_importer import get_user_part_catalog
 from app.services.document_parser import DocumentParserError, parse_document_text
+from app.services.part_reference_resolver import PartReferenceResolver
 from app.services.pdf_text_extractor import PdfTextExtractionError, extract_pdf_text
 
 
 class DocumentIndexError(ValueError):
     pass
+
+
+@dataclass(frozen=True)
+class SectionPartMatch:
+    """A document section matching a part, keeping explicitly-written references
+    distinct from ones inferred from descriptive prose."""
+
+    document: EngineeringDocument
+    section: DocumentSection
+    matched_parts: list[str]
+    inferred_parts: list[str]
 
 
 def index_document_upload(
@@ -34,6 +50,12 @@ def index_document_upload(
     if existing is not None:
         archive_document(db=db, document=existing)
 
+    inferred_by_section = _infer_part_references(db=db, user_id=user_id, parsed=parsed)
+    inferred_all = sorted(
+        {part for parts in inferred_by_section.values() for part in parts}
+        - set(parsed.part_references)
+    )
+
     document = EngineeringDocument(
         user_id=user_id,
         upload_id=upload.id,
@@ -43,6 +65,7 @@ def index_document_upload(
         status="indexed",
         section_count=len(parsed.sections),
         part_references=parsed.part_references,
+        inferred_part_references=inferred_all,
     )
     db.add(document)
     db.flush()
@@ -57,6 +80,10 @@ def index_document_upload(
                 heading=section.heading,
                 content=section.content,
                 part_references=section.part_references,
+                inferred_part_references=sorted(
+                    set(inferred_by_section.get(section.section_index, []))
+                    - set(section.part_references)
+                ),
             )
             for section in parsed.sections
         ]
@@ -64,6 +91,24 @@ def index_document_upload(
     db.commit()
     db.refresh(document)
     return document
+
+
+def _infer_part_references(*, db: Session, user_id: int, parsed) -> dict[int, list[str]]:
+    catalog = get_user_part_catalog(db=db, user_id=user_id)
+    if not catalog:
+        return {}
+
+    return PartReferenceResolver().resolve(
+        sections=[
+            SectionForExtraction(
+                section_index=section.section_index,
+                heading=section.heading,
+                content=section.content,
+            )
+            for section in parsed.sections
+        ],
+        catalog=catalog,
+    )
 
 
 def list_documents(*, db: Session, user_id: int) -> list[EngineeringDocument]:
@@ -121,7 +166,7 @@ def find_sections_referencing_parts(
     db: Session,
     user_id: int,
     part_numbers: list[str],
-) -> list[tuple[EngineeringDocument, DocumentSection, list[str]]]:
+) -> list[SectionPartMatch]:
     normalized_parts = {_normalize_part(part) for part in part_numbers if part}
     if not normalized_parts:
         return []
@@ -142,11 +187,22 @@ def find_sections_referencing_parts(
         )
     )
 
-    matches: list[tuple[EngineeringDocument, DocumentSection, list[str]]] = []
+    matches: list[SectionPartMatch] = []
     for section in sections:
         matched_parts = sorted(normalized_parts.intersection(section.part_references or []))
-        if matched_parts:
-            matches.append((documents[section.document_id], section, matched_parts))
+        inferred_parts = sorted(
+            normalized_parts.intersection(section.inferred_part_references or [])
+            - set(matched_parts)
+        )
+        if matched_parts or inferred_parts:
+            matches.append(
+                SectionPartMatch(
+                    document=documents[section.document_id],
+                    section=section,
+                    matched_parts=matched_parts,
+                    inferred_parts=inferred_parts,
+                )
+            )
 
     return matches
 

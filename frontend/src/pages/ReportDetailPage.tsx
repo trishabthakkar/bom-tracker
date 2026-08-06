@@ -291,9 +291,19 @@ export function ReportDetailPage() {
                   <RiskBadge level={section.severity} />
                 </div>
                 <p className="mt-2 text-muted-foreground">{section.excerpt}</p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Matched parts: {section.matched_parts.join(", ")}
-                </p>
+                {section.matched_parts.length > 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Matched parts: {section.matched_parts.join(", ")}
+                  </p>
+                )}
+                {section.inferred_parts.length > 0 && (
+                  <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                    <Sparkles className="h-3 w-3 shrink-0" />
+                    <span>
+                      Referenced by description: {section.inferred_parts.join(", ")}
+                    </span>
+                  </p>
+                )}
               </div>
             ))}
           </div>

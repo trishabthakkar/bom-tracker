@@ -8,7 +8,25 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.db.base import Base
 from app.models.upload import UploadedFile
 from app.models.user import User
+from app.services.llm.base import BaseLLMProvider
 from app.services.llm.rule_based import RuleBasedLLMProvider
+
+
+class StubLLMProvider(BaseLLMProvider):
+    """Base for test doubles: override only the method under test.
+
+    Keeps adding a provider capability from becoming an edit to every fake
+    provider in the suite, while still failing loudly if a test reaches a
+    method it did not intend to exercise."""
+
+    def parse_engineering_change(self, text):
+        raise NotImplementedError
+
+    def summarize_impact_report(self, report):
+        raise NotImplementedError
+
+    def extract_part_references(self, *, sections, catalog):
+        raise NotImplementedError
 
 
 @pytest.fixture(autouse=True)

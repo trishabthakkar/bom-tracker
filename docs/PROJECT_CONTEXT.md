@@ -525,9 +525,12 @@ Extracted fields:
 
 LLM abstraction:
 
-- `BaseLLMProvider` defines the provider contract.
-- `RuleBasedLLMProvider` is the current local implementation.
-- Future providers can implement the same interface without changing API routes.
+- `BaseLLMProvider` defines the provider contract: ECO parsing, impact report
+  summarization, and document part-reference extraction.
+- `RuleBasedLLMProvider` is the deterministic local implementation and the
+  fallback for every capability.
+- `OpenAILLMProvider` implements the same contract against the Responses API.
+- Provider choice is driven by `LLM_PROVIDER`; routes never change.
 
 Current behavior:
 
@@ -615,9 +618,24 @@ Current behavior:
 - Lets users inspect indexed document sections in the frontend.
 - Lets saved reports include exact downstream document sections when those sections reference the ECO old or new part.
 
+Current behavior (updated in Phase 31):
+
+- Regex extraction runs first and produces `part_references`.
+- When an LLM provider is configured, a second pass resolves references the
+  regex cannot see (descriptive mentions such as "the pressure relief valve",
+  and part numbers whose shape the pattern rejects). Those land in
+  `inferred_part_references`, kept separate from regex hits so provenance is
+  never lost.
+- Inference is grounded: the model only receives parts the user has actually
+  imported, and any returned part number absent from that catalog is dropped.
+- Sections matched only by inference stay below `high` severity in reports.
+- Documents indexed before any BOM import have no catalog to resolve against
+  and get regex references only; re-indexing after an import picks up inferred
+  references.
+
 Current limitation:
 
-- Document parsing is deterministic text extraction and regex matching. It does not yet use semantic LLM matching or manual review/approval.
+- Inferred references are not surfaced for manual review/approval.
 
 ## Security Decisions
 
@@ -635,7 +653,6 @@ Current limitation:
 
 ## Out of Scope So Far
 
-- Semantic LLM matching for downstream document sections.
 - Visual frontend dependency graph rendering.
 - Durable external worker queue such as Celery/RQ/Arq.
 - Password reset and email verification flows.

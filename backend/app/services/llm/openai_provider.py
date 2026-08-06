@@ -5,11 +5,30 @@ from typing import Any
 import httpx
 from pydantic import ValidationError
 
+from app.schemas.document import PartCatalogEntry, SectionForExtraction
 from app.schemas.eco import ParsedEngineeringChange
 from app.schemas.impact import ReportSummary, StructuredImpactReport
 from app.services.llm.base import BaseLLMProvider, LLMProviderError
 
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+
+# Bounds keep a single large document from turning into an unbounded number of
+# tokens or requests. Sections beyond the cap keep their regex references only.
+MAX_CATALOG_ENTRIES = 400
+MAX_SECTIONS_PER_REQUEST = 20
+MAX_SECTION_CHARS = 1_500
+
+PART_REFERENCE_SYSTEM_PROMPT = (
+    "You link engineering document sections to parts from a bill of materials. "
+    "You are given a catalog of parts (part_number and description) and document "
+    "sections. For each section, return every catalog part_number the section "
+    "refers to, including references made only by description "
+    '(for example "the pressure relief valve" refers to the catalog part whose '
+    "description is a pressure relief valve). "
+    "Only return part_number values that appear verbatim in the supplied catalog. "
+    "Never invent a part number. Return an empty list for sections that refer to no "
+    "catalog part."
+)
 
 SUMMARY_SYSTEM_PROMPT = (
     "You write concise executive summaries of engineering change impact reports "
@@ -44,6 +63,27 @@ ECO_JSON_SCHEMA: dict[str, Any] = {
         "effective_date",
         "confidence",
     ],
+}
+
+
+PART_REFERENCE_JSON_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "sections": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "section_index": {"type": "integer"},
+                    "part_numbers": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["section_index", "part_numbers"],
+            },
+        }
+    },
+    "required": ["sections"],
 }
 
 
@@ -117,6 +157,92 @@ class OpenAILLMProvider(BaseLLMProvider):
             raise LLMProviderError("OpenAI response did not contain a summary.")
 
         return ReportSummary(text=text, source=f"openai:{self.model}")
+
+    def extract_part_references(
+        self,
+        *,
+        sections: list[SectionForExtraction],
+        catalog: list[PartCatalogEntry],
+    ) -> dict[int, list[str]]:
+        if not sections or not catalog:
+            return {}
+
+        bounded_catalog = catalog[:MAX_CATALOG_ENTRIES]
+        # Case-insensitive lookup back to the catalog's own spelling, so a model
+        # that echoes a part in a different case still resolves to a real part.
+        known_parts = {entry.part_number.upper(): entry.part_number for entry in bounded_catalog}
+        catalog_payload = [
+            {"part_number": entry.part_number, "description": entry.description or ""}
+            for entry in bounded_catalog
+        ]
+
+        references: dict[int, list[str]] = {}
+        for batch_start in range(0, len(sections), MAX_SECTIONS_PER_REQUEST):
+            batch = sections[batch_start : batch_start + MAX_SECTIONS_PER_REQUEST]
+            references.update(self._extract_batch(batch, catalog_payload, known_parts))
+
+        return references
+
+    def _extract_batch(
+        self,
+        sections: list[SectionForExtraction],
+        catalog_payload: list[dict[str, str]],
+        known_parts: dict[str, str],
+    ) -> dict[int, list[str]]:
+        payload = {
+            "model": self.model,
+            "input": [
+                {"role": "system", "content": PART_REFERENCE_SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "catalog": catalog_payload,
+                            "sections": [
+                                {
+                                    "section_index": section.section_index,
+                                    "heading": section.heading,
+                                    "content": section.content[:MAX_SECTION_CHARS],
+                                }
+                                for section in sections
+                            ],
+                        }
+                    ),
+                },
+            ],
+            "text": {
+                "format": {
+                    "type": "json_schema",
+                    "name": "part_references",
+                    "strict": True,
+                    "schema": PART_REFERENCE_JSON_SCHEMA,
+                }
+            },
+        }
+
+        extracted = _load_json_object(_extract_response_text(self._post(payload)))
+        valid_indexes = {section.section_index for section in sections}
+        results: dict[int, list[str]] = {}
+
+        for item in extracted.get("sections", []):
+            if not isinstance(item, dict):
+                continue
+
+            section_index = item.get("section_index")
+            if section_index not in valid_indexes:
+                continue
+
+            resolved = sorted(
+                {
+                    known_parts[part.strip().upper()]
+                    for part in item.get("part_numbers", [])
+                    if isinstance(part, str) and part.strip().upper() in known_parts
+                }
+            )
+            if resolved:
+                results[section_index] = resolved
+
+        return results
 
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
         headers = {
