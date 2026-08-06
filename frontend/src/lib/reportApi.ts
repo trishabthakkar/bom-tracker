@@ -9,6 +9,7 @@ export type SavedImpactReport = {
   graph_snapshot_id: number | null;
   bom_upload_id: number;
   summary: string;
+  summary_source: string;
   affected_part: string | null;
   effective_date: string | null;
   risk_level: string;
@@ -36,6 +37,7 @@ export type ReportComment = {
 export type SavedImpactReportDetail = SavedImpactReport & {
   report: {
     summary: string;
+    summary_source: string;
     affected_part: string | null;
     effective_date: string | null;
     eco: {

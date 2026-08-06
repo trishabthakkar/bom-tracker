@@ -2,6 +2,7 @@ import re
 from datetime import date, datetime
 
 from app.schemas.eco import ParsedEngineeringChange
+from app.schemas.impact import ReportSummary, StructuredImpactReport
 from app.services.llm.base import BaseLLMProvider
 
 PART_PATTERN = r"[A-Z]{1,8}[-_ ]?\d{2,8}[A-Z]?"
@@ -22,6 +23,9 @@ class RuleBasedLLMProvider(BaseLLMProvider):
             source="rule_based",
             confidence=_calculate_confidence(normalized),
         )
+
+    def summarize_impact_report(self, report: StructuredImpactReport) -> ReportSummary:
+        return ReportSummary(text=report.summary, source="rule_based")
 
 
 def _extract_change_type(text: str) -> str | None:

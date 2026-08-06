@@ -8,6 +8,19 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.db.base import Base
 from app.models.upload import UploadedFile
 from app.models.user import User
+from app.services.llm.rule_based import RuleBasedLLMProvider
+
+
+@pytest.fixture(autouse=True)
+def _force_rule_based_llm_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the test suite hermetic regardless of LLM_PROVIDER in the local .env file.
+
+    Without this, any test that goes through the default (settings-driven) provider
+    resolution silently makes live network calls to OpenAI whenever a real API key
+    is configured for local dev."""
+    provider = RuleBasedLLMProvider()
+    monkeypatch.setattr("app.services.eco_parser.get_llm_provider", lambda: provider)
+    monkeypatch.setattr("app.services.report_summarizer.get_llm_provider", lambda: provider)
 
 
 @pytest.fixture

@@ -21,6 +21,7 @@ class ImpactReport(Base):
     )
     bom_upload_id: Mapped[int] = mapped_column(ForeignKey("uploaded_files.id"), index=True, nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False)
+    summary_source: Mapped[str] = mapped_column(String(60), default="rule_based", nullable=False)
     affected_part: Mapped[str | None] = mapped_column(String(120), index=True, nullable=True)
     effective_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     risk_level: Mapped[str] = mapped_column(String(40), index=True, nullable=False)

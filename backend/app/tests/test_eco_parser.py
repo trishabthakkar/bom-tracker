@@ -5,6 +5,7 @@ import pytest
 from app.schemas.eco import ParsedEngineeringChange
 from app.services.eco_parser import EngineeringChangeParser
 from app.services.llm.base import BaseLLMProvider, LLMProviderError
+from app.services.llm.rule_based import RuleBasedLLMProvider
 
 
 def test_parse_replacement_change() -> None:
@@ -13,7 +14,7 @@ def test_parse_replacement_change() -> None:
         "Reason: supplier obsolescence. Effective date: 2026-08-15."
     )
 
-    result = EngineeringChangeParser().parse_text(text)
+    result = EngineeringChangeParser(provider=RuleBasedLLMProvider()).parse_text(text)
 
     assert result.change_type == "replacement"
     assert result.old_part == "PN-100"
@@ -26,7 +27,7 @@ def test_parse_replacement_change() -> None:
 def test_parse_reason_from_due_to_phrase() -> None:
     text = "Revision update for old part VALVE-100 due to field leakage effective 07/31/2026"
 
-    result = EngineeringChangeParser().parse_text(text)
+    result = EngineeringChangeParser(provider=RuleBasedLLMProvider()).parse_text(text)
 
     assert result.change_type == "revision"
     assert result.reason == "field leakage"
@@ -36,7 +37,7 @@ def test_parse_reason_from_due_to_phrase() -> None:
 def test_parse_obsolescence_change_type() -> None:
     text = "Part PUMP-777 is obsolete because vendor discontinued supply."
 
-    result = EngineeringChangeParser().parse_text(text)
+    result = EngineeringChangeParser(provider=RuleBasedLLMProvider()).parse_text(text)
 
     assert result.change_type == "obsolescence"
     assert result.reason == "vendor discontinued supply"
@@ -44,7 +45,7 @@ def test_parse_obsolescence_change_type() -> None:
 
 def test_empty_text_raises_error() -> None:
     with pytest.raises(ValueError, match="cannot be empty"):
-        EngineeringChangeParser().parse_text("   ")
+        EngineeringChangeParser(provider=RuleBasedLLMProvider()).parse_text("   ")
 
 
 def test_parser_uses_provider_abstraction() -> None:
@@ -60,6 +61,9 @@ def test_parser_uses_provider_abstraction() -> None:
                 confidence=1,
             )
 
+        def summarize_impact_report(self, report):
+            raise NotImplementedError
+
     result = EngineeringChangeParser(provider=FakeProvider()).parse_text("input")
 
     assert result.old_part == "OLD-1"
@@ -72,6 +76,9 @@ def test_parser_falls_back_to_rule_based_provider_on_llm_failure() -> None:
     class FailingProvider(BaseLLMProvider):
         def parse_engineering_change(self, text: str) -> ParsedEngineeringChange:
             raise LLMProviderError("remote provider failed")
+
+        def summarize_impact_report(self, report):
+            raise NotImplementedError
 
     result = EngineeringChangeParser(provider=FailingProvider()).parse_text(
         "Replace old part PN-100 with new part PN-200. Reason: supplier obsolescence."

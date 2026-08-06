@@ -75,6 +75,7 @@ def test_generate_and_save_impact_report_persists_report(
     assert len(reports) == 1
     assert report.risk_level in {"Medium", "High"}
     assert report.affected_part == "PN-1212"
+    assert report.summary_source == "rule_based"
     assert structured.affected_part == "PN-1212"
     assert len(structured.affected_document_sections) == 1
     assert structured.affected_document_sections[0].heading == "Relief valve replacement"

@@ -180,6 +180,7 @@ def test_complete_bom_eco_report_workflow_with_diff_documents_and_exports(
     assert signed_report.eco_record_id == approved_eco.id
     assert comment.body == "QA workflow generated successfully."
     assert structured.affected_part == "PN-1212"
+    assert structured.summary_source == "rule_based"
     assert structured.affected_assemblies[0].affected_parents == [
         "ASM-1000",
         "ASM-1200",

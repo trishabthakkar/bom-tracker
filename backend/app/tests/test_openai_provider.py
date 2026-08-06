@@ -1,5 +1,7 @@
 import httpx
 
+from app.schemas.eco import ParsedEngineeringChange
+from app.schemas.impact import RiskAssessment, StructuredImpactReport
 from app.services.llm.openai_provider import OPENAI_RESPONSES_URL, OpenAILLMProvider
 
 
@@ -43,3 +45,40 @@ def test_openai_provider_parses_structured_response() -> None:
     assert result.source == "openai:test-model"
     assert client.calls[0]["headers"]["Authorization"] == "Bearer test-key"
     assert client.calls[0]["json"]["text"]["format"]["type"] == "json_schema"
+
+
+def test_openai_provider_summarizes_impact_report() -> None:
+    request = httpx.Request("POST", OPENAI_RESPONSES_URL)
+    response = httpx.Response(
+        200,
+        request=request,
+        json={"output_text": "Replacing PN-1212 with PN-2212 carries high risk to two assemblies."},
+    )
+    client = FakeClient(response)
+    report = StructuredImpactReport(
+        summary="template summary",
+        eco=ParsedEngineeringChange(
+            change_type="replacement",
+            old_part="PN-1212",
+            new_part="PN-2212",
+            reason="supplier obsolescence",
+            effective_date=None,
+            source="rule_based",
+            confidence=0.9,
+        ),
+        affected_part="PN-1212",
+        effective_date=None,
+        risk=RiskAssessment(level="High", score=90, reasons=["high impact change type"]),
+    )
+
+    result = OpenAILLMProvider(
+        api_key="test-key",
+        model="test-model",
+        timeout_seconds=5,
+        client=client,
+    ).summarize_impact_report(report)
+
+    assert result.text == "Replacing PN-1212 with PN-2212 carries high risk to two assemblies."
+    assert result.source == "openai:test-model"
+    assert client.calls[0]["headers"]["Authorization"] == "Bearer test-key"
+    assert "text" not in client.calls[0]["json"]

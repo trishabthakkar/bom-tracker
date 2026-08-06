@@ -18,6 +18,7 @@ from app.services.documents import find_sections_referencing_parts
 from app.services.eco_records import create_eco_record, eco_record_to_parsed_change
 from app.services.eco_parser import EngineeringChangeParser
 from app.services.intelligence_layer import IntelligenceLayer
+from app.services.report_summarizer import ReportSummarizer
 from app.services.bom_parser import BomParserError, parse_bom_file
 
 
@@ -128,6 +129,9 @@ def _generate_and_save_from_parsed_eco(
         eco=parsed_eco,
         document_sections=document_sections,
     )
+    report_summary = ReportSummarizer().summarize(report)
+    report.summary = report_summary.text
+    report.summary_source = report_summary.source
 
     return save_impact_report(
         db=db,
@@ -157,6 +161,7 @@ def save_impact_report(
         graph_snapshot_id=graph_snapshot.id if graph_snapshot else None,
         bom_upload_id=bom_upload.id,
         summary=report.summary,
+        summary_source=report.summary_source,
         affected_part=report.affected_part,
         effective_date=report.effective_date,
         risk_level=report.risk.level,

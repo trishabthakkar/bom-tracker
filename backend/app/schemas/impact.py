@@ -51,6 +51,7 @@ class RiskAssessment(BaseModel):
 
 class StructuredImpactReport(BaseModel):
     summary: str
+    summary_source: str = "rule_based"
     eco: ParsedEngineeringChange
     affected_part: str | None
     effective_date: date | None
@@ -59,3 +60,8 @@ class StructuredImpactReport(BaseModel):
     affected_document_sections: list[DocumentSectionImpact] = Field(default_factory=list)
     suggested_updates: list[SuggestedUpdate] = Field(default_factory=list)
     risk: RiskAssessment
+
+
+class ReportSummary(BaseModel):
+    text: str
+    source: str

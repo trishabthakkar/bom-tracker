@@ -6,9 +6,18 @@ import httpx
 from pydantic import ValidationError
 
 from app.schemas.eco import ParsedEngineeringChange
+from app.schemas.impact import ReportSummary, StructuredImpactReport
 from app.services.llm.base import BaseLLMProvider, LLMProviderError
 
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+
+SUMMARY_SYSTEM_PROMPT = (
+    "You write concise executive summaries of engineering change impact reports "
+    "for non-engineer stakeholders (program managers, procurement). You are given "
+    "structured impact data as JSON. Write 2-4 plain-English sentences covering "
+    "what changed, the risk level, and the most important downstream impact. "
+    "Only state facts present in the JSON. Do not use markdown or bullet points."
+)
 
 ECO_JSON_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -93,6 +102,22 @@ class OpenAILLMProvider(BaseLLMProvider):
         except (TypeError, ValueError, ValidationError) as error:
             raise LLMProviderError("OpenAI response did not match the expected ECO schema.") from error
 
+    def summarize_impact_report(self, report: StructuredImpactReport) -> ReportSummary:
+        payload = {
+            "model": self.model,
+            "input": [
+                {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
+                {"role": "user", "content": json.dumps(_summary_context(report))},
+            ],
+        }
+
+        response_json = self._post(payload)
+        text = _extract_response_text(response_json).strip()
+        if not text:
+            raise LLMProviderError("OpenAI response did not contain a summary.")
+
+        return ReportSummary(text=text, source=f"openai:{self.model}")
+
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -128,6 +153,54 @@ def _extract_response_json(response_json: dict[str, Any]) -> dict[str, Any]:
                 return _load_json_object(text)
 
     raise LLMProviderError("OpenAI response did not contain structured text output.")
+
+
+def _extract_response_text(response_json: dict[str, Any]) -> str:
+    output_text = response_json.get("output_text")
+    if isinstance(output_text, str):
+        return output_text
+
+    for output_item in response_json.get("output", []):
+        if not isinstance(output_item, dict):
+            continue
+        for content_item in output_item.get("content", []):
+            if not isinstance(content_item, dict):
+                continue
+            text = content_item.get("text")
+            if isinstance(text, str):
+                return text
+
+    raise LLMProviderError("OpenAI response did not contain text output.")
+
+
+def _summary_context(report: StructuredImpactReport) -> dict[str, Any]:
+    return {
+        "change_type": report.eco.change_type,
+        "affected_part": report.affected_part,
+        "effective_date": report.effective_date.isoformat() if report.effective_date else None,
+        "reason": report.eco.reason,
+        "risk": {
+            "level": report.risk.level,
+            "score": report.risk.score,
+            "reasons": report.risk.reasons,
+        },
+        "affected_assemblies": [
+            {
+                "part_number": assembly.part_number,
+                "affected_parent_count": len(assembly.affected_parents),
+                "affected_child_count": len(assembly.affected_children),
+            }
+            for assembly in report.affected_assemblies
+        ],
+        "downstream_records": [
+            {"record_type": record.record_type, "impact": record.impact, "severity": record.severity}
+            for record in report.downstream_records
+        ],
+        "affected_document_sections": [
+            {"document_type": section.document_type, "heading": section.heading, "severity": section.severity}
+            for section in report.affected_document_sections
+        ],
+    }
 
 
 def _load_json_object(value: str) -> dict[str, Any]:

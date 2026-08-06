@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, AlertCircle, Download, MessageSquare, Save } from "lucide-react";
+import { ArrowLeft, AlertCircle, Download, MessageSquare, Save, Sparkles } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { RiskBadge } from "@/components/reports/RiskBadge";
 import { Badge } from "@/components/ui/badge";
@@ -121,7 +121,15 @@ export function ReportDetailPage() {
             </Link>
           </Button>
           <h1 className="mt-4 text-2xl font-semibold tracking-normal">Report #{report.id}</h1>
-          <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{report.summary}</p>
+          <div className="mt-1 flex max-w-3xl flex-wrap items-start gap-2">
+            <p className="text-sm text-muted-foreground">{report.summary}</p>
+            {report.summary_source.startsWith("openai") && (
+              <Badge variant="outline" className="shrink-0 gap-1 text-xs">
+                <Sparkles className="h-3 w-3" />
+                AI-generated
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline" size="sm">

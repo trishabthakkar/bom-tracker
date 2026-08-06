@@ -24,6 +24,7 @@ class ImpactReportRead(BaseModel):
     graph_snapshot_id: int | None = None
     bom_upload_id: int
     summary: str
+    summary_source: str
     affected_part: str | None = None
     effective_date: date | None = None
     risk_level: str

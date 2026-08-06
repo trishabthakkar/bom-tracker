@@ -223,6 +223,7 @@ def main() -> None:
     print(f"eco_status={approved_eco['workflow_status']}")
     print(f"report_id={report['id']}")
     print(f"risk={report['risk_level']} score={report['risk_score']}")
+    print(f"summary_source={report['summary_source']}")
     print(f"comment_id={comment['id']}")
     print(f"review_status={signed['review_status']}")
     print(f"csv_bytes={csv_export['bytes']}")
